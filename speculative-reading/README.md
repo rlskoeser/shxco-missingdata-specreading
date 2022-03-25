@@ -11,3 +11,5 @@ This folder includes code used for the member analysis and recommendations in th
 - [Sco_partialborrowers_info.ipynb](Sco_partialborrowers_info.ipynb) — analyze the known borrowing behavior of partial borrowers, including Hemingway, and generate raincloud plots
 - [lenskit_model_scores_stability.ipynb](lenskit_model_scores_stability.ipynb)
 - [Interpret_Output_Results.ipynb](Interpret_Output_Results.ipynb)
+- [CollaborativeFiltering.ipynb](CollaborativeFiltering.ipynb)
+- [final_borrowers_table.R](final_borrowers_table.R)

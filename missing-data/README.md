@@ -10,4 +10,4 @@ This folder includes code used for the estimates in the "Missing Data" section o
 - [ScoBorrowingCapacity_v1_1data.ipynb](ScoBorrowingCapacity_v1_1data.ipynb) — borrowing capacity analysis; used as basis for estimating missing borrowing activity
 - [Sco_missing_borrowing_activity.ipynb](Sco_missing_borrowing_activity.ipynb) — estimate minimum missing borrowing activity based on subscriptions
 - [Sco_missing_books.ipynb](Sco_missing_books.ipynb) — estimate missing books using Copia
-- [Sco_bookcatalog_books_estimate.ipynb] — analyze books from catalog of acquisitions 1933—1940 and estimate missing books
+- [Sco_bookcatalog_books_estimate.ipynb](Sco_bookcatalog_books_estimate.ipynb) — analyze books from catalog of acquisitions 1933—1940 and estimate missing books

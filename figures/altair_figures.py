@@ -7,7 +7,6 @@ from selenium.webdriver.common.by import By
 from webdriver_manager.chrome import ChromeDriverManager
 
 driver = webdriver.Chrome(ChromeDriverManager().install())
-
 # pip install altair altair_saver selenium webdriver_manager
 
 # assuming all json files in this directory are altair json

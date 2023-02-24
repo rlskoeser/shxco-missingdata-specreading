@@ -3,11 +3,11 @@ import os.path
 import altair as alt
 import altair_saver
 from selenium import webdriver
-from selenium.webdriver.common.by import By
 from webdriver_manager.chrome import ChromeDriverManager
 
+
 driver = webdriver.Chrome(ChromeDriverManager().install())
-# pip install altair altair_saver selenium webdriver_manager
+# pip install altair altair_saver selenium<4.3 webdriver_manager
 
 # assuming all json files in this directory are altair json
 for filename in glob.glob("*.json"):
@@ -23,4 +23,10 @@ for filename in glob.glob("*.json"):
         print("Saving as %s.html" % basename)
         chart.save("%s.html" % basename)
         print("Saving as %s.png" % basename)
-        chart.save("%s.png" % basename, scale_factor=2.0, webdriver=driver)
+        altair_saver.save(
+            chart,
+            "%s.png" % basename,
+            scale_factor=2.0,
+            method="selenium",
+            webdriver=driver,
+        )

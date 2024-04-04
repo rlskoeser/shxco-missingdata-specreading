@@ -11,12 +11,12 @@ This notebook generates a table of logbook gaps that are included in our analyse
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 # name required packages
-list.of.packages <- c("ggplot2", "glue", "gt", "tidyverse", "webshot", "paletteer", "gtExtras")
+list.of.packages <- c("ggplot2", "glue", "gt", "tidyverse", "webshot", "paletteer", "gtExtras", "here")
 
 # install required packages, if necessary, and load them ----
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[, "Package"])]
 if (length(new.packages) > 0) {
-    install.packages(new.packages)
+    install.packages(new.packages, repos = "https://cloud.r-project.org/")
 }
 
 # Instead of using require, we'll use library to load the packages
@@ -35,7 +35,13 @@ read_csv_safe <- function(file_path) {
     }
 }
 
-skipped_periods <- read_csv_safe("data/skipped_logbook_periods.csv")
+# Use here to build the paths to your CSV files
+skipped_periods_path <- here::here("data", "skipped_logbook_periods.csv")
+updated_skipped_periods_path <- here::here("data", "updated_skipped_logbook_periods.csv")
+
+# Now you can use these paths in your read_csv_safe function
+skipped_periods <- read_csv_safe(skipped_periods_path)
+updated_skipped_periods <- read_csv_safe(updated_skipped_periods_path)
 
 # Convert all character columns to UTF-8
 skipped_periods[] <- lapply(skipped_periods, function(x) {
@@ -44,9 +50,6 @@ skipped_periods[] <- lapply(skipped_periods, function(x) {
     }
     x
 })
-
-updated_skipped_periods <- read_csv_safe("data/updated_skipped_logbook_periods.csv")
-
 # Convert all character columns to UTF-8
 updated_skipped_periods[] <- lapply(updated_skipped_periods, function(x) {
     if (is.character(x)) {

@@ -1,6 +1,6 @@
 ---
 title: "Logbooks Table Generator"
-output: html_notebook
+output: github_document
 knit_root_dir: "/Volumes/Samsung_T5/shxco-missingdata-specreading/"
 encoding: UTF-8
 ---

@@ -1,7 +1,6 @@
 ---
 title: "Logbooks Table Generator"
 output: github_document
-knit_root_dir: "/Volumes/Samsung_T5/shxco-missingdata-specreading/"
 encoding: UTF-8
 ---
 
@@ -79,8 +78,6 @@ gap_table <- skipped_periods %>%
         subtitle = md("Larger gaps on the left are included in our analyses, while smaller ones on the right are skipped.")
     ) %>%
     opt_table_font(font = list("Times New Roman", "Cochin", "Serif"), weight = "normal")
-
-gtsave(gap_table, glue::glue("gaps.png"))
 
 gap_table
 ```

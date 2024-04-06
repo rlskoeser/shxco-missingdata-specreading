@@ -214,7 +214,7 @@ def generate_member_events(events_df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Da
     member_events = member_events.sort_values(by=['date', 'event_type'])
 
     # members_first_events = member_events.groupby("member_id").first().reset_index()
-    return member_events, newmember_yearly_count
+    return member_events, newmember_yearly_count, members_first_dates
 
 
 

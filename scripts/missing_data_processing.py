@@ -149,7 +149,8 @@ def generate_logbook_gaps(logbook_events_df: pd.DataFrame) -> Tuple[pd.DataFrame
 
     logbook_gaps_df = pd.DataFrame(logbook_gaps)
     logbook_gaps_df['gap_label'] = logbook_gaps_df.apply(lambda row: '%s to %s (%d days)' % (row.start.date().isoformat(), row.end.date().isoformat(), row.days), axis=1)
-    return logbook_gaps_df, logbooks_weekly_count, logbook_gaps
+    return logbook_gaps_df, logbooks_weekly_count, logbook_gaps, logbook_events_nogaps
+
 
 def generate_member_events(events_df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Generate member events from the events dataframe.

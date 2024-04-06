@@ -76,7 +76,7 @@ def prepare_data_for_prophet(weekly_subscriptions: pd.DataFrame, gap_start_date:
     # Rename columns for Prophet
     return data_before_gap.rename(columns={'date': 'ds', 'total': 'y'})
 
-def forecast_gap_with_prophet(data_before_gap: pd.DataFrame, gap_duration: dict, use_weekly_growth_cap:bool=False, growth_cap:bool=None) -> pd.DataFrame:
+def forecast_gap_with_prophet(data_before_gap: pd.DataFrame, gap_duration: dict, time_duration: date, use_weekly_growth_cap:bool=False, growth_cap:bool=None, model_weekly:bool=True, model_monthly:bool=False, model_daily:bool=False) -> pd.DataFrame:
     """Forecast gap with Prophet.
 
     Args:
@@ -93,13 +93,22 @@ def forecast_gap_with_prophet(data_before_gap: pd.DataFrame, gap_duration: dict,
         data_before_gap['floor'] = 0
         data_before_gap['cap'] = growth_cap
     else:
-        prophet_model = Prophet()
+        if model_daily:
+            prophet_model = Prophet(daily_seasonality=True)
+        else:
+            prophet_model = Prophet()
     prophet_model.fit(data_before_gap)
     
     # Calculate forecast period in weeks and add extra buffer
-    forecast_duration = math.ceil(gap_duration['days'] / 7) + 7
-    future_subscriptions = prophet_model.make_future_dataframe(periods=forecast_duration, freq='W')
-    
+    if model_weekly:
+        forecast_duration = math.ceil(gap_duration['days'] / 7) + 7
+        future_subscriptions = prophet_model.make_future_dataframe(periods=forecast_duration, freq='W')
+    if model_monthly:
+        forecast_duration = math.ceil(gap_duration['days'] / 30) + 2
+        future_subscriptions = prophet_model.make_future_dataframe(periods=forecast_duration, freq='MS')
+    if model_daily:
+        forecast_duration = gap_duration['days']
+        future_subscriptions = prophet_model.make_future_dataframe(periods=forecast_duration, freq='D')
     # Perform forecasting
     if use_weekly_growth_cap:
         future_subscriptions['floor'] = 0
@@ -107,10 +116,10 @@ def forecast_gap_with_prophet(data_before_gap: pd.DataFrame, gap_duration: dict,
     forecasted_subscriptions = prophet_model.predict(future_subscriptions)
     
     # Filter forecast for the gap duration with an additional one-week buffer
-    # forecast_near_gap = forecasted_subscriptions[(forecasted_subscriptions.ds > (gap_duration['start'] - one_week_duration)) & (forecasted_subscriptions.ds < (gap_duration['end'] + one_week_duration))]
-    return forecasted_subscriptions
+    forecast_near_gap = forecasted_subscriptions[(forecasted_subscriptions.ds > (gap_duration['start'] - time_duration)) & (forecasted_subscriptions.ds < (gap_duration['end'] + time_duration))]
+    return forecasted_subscriptions, forecast_near_gap
 
-def forecast_missing_subscriptions(weekly_subscriptions: pd.DataFrame, logbook_gaps: List, post1932_date: date, train_all_data:bool=False, return_prophet_model:bool=False, use_weekly_growth_cap:bool=False, use_total_growth_cap:bool=False) -> pd.DataFrame:
+def forecast_missing_subscriptions(weekly_subscriptions: pd.DataFrame, logbook_gaps: List, post1932_date: date, model_weekly:bool=True, model_monthly:bool=False, model_daily:bool=False, train_all_data:bool=False, return_prophet_model:bool=False, use_weekly_growth_cap:bool=False, use_total_growth_cap:bool=False) -> pd.DataFrame:
     """Forecast missing subscriptions.
 
     Args:
@@ -125,6 +134,8 @@ def forecast_missing_subscriptions(weekly_subscriptions: pd.DataFrame, logbook_g
     Returns:
         pd.DataFrame: The missing subscriptions forecast."""
     
+    time_duration = timedelta(days=30 * 6) if model_monthly else timedelta(days=7)
+
     growth_cap = weekly_subscriptions.total.max() if use_weekly_growth_cap else None
     if train_all_data:
         prophet_model = Prophet(weekly_seasonality=True, growth='logistic') if use_total_growth_cap else Prophet(weekly_seasonality=True)
@@ -134,12 +145,13 @@ def forecast_missing_subscriptions(weekly_subscriptions: pd.DataFrame, logbook_g
         prophet_model.fit(weekly_subscriptions.rename(columns={'date': 'ds', 'total': 'y'}))
     
     all_forecasts = []
+    all_gap_forecasts = []
 
     for gap in logbook_gaps:
         gap_start_date = gap['start']
 
         data_before_gap = prepare_data_for_prophet(weekly_subscriptions, gap_start_date, post1932_date)
-        forecasted_subscriptions = forecast_gap_with_prophet(data_before_gap, gap, use_weekly_growth_cap, growth_cap)
+        forecasted_subscriptions, forecasted_near_gap = forecast_gap_with_prophet(data_before_gap, gap, time_duration, use_weekly_growth_cap, growth_cap, model_weekly, model_monthly)
         
         # Optional: Display or process forecast_near_gap as needed
         # display(forecast_near_gap.head())

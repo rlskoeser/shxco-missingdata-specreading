@@ -119,15 +119,19 @@ def forecast_gap_with_prophet(data_before_gap: pd.DataFrame, gap_duration: dict,
     forecast_near_gap = forecasted_subscriptions[(forecasted_subscriptions.ds > (gap_duration['start'] - time_duration)) & (forecasted_subscriptions.ds < (gap_duration['end'] + time_duration))]
     return forecasted_subscriptions, forecast_near_gap
 
-def forecast_missing_subscriptions(weekly_subscriptions: pd.DataFrame, logbook_gaps: List, post1932_date: date, model_weekly:bool=True, model_monthly:bool=False, model_daily:bool=False, train_all_data:bool=False, return_prophet_model:bool=False, use_weekly_growth_cap:bool=False, use_total_growth_cap:bool=False) -> pd.DataFrame:
+def forecast_missing_subscriptions(weekly_subscriptions: pd.DataFrame, logbook_gaps: List, post1932_date: date, model_weekly:bool=True, model_monthly:bool=False, model_daily:bool=False, train_all_data:bool=False, return_prophet_model:bool=False, return_all_gap_forecasts:bool=False, use_weekly_growth_cap:bool=False, use_total_growth_cap:bool=False) -> pd.DataFrame:
     """Forecast missing subscriptions.
 
     Args:
         weekly_subscriptions (pd.DataFrame): The weekly subscriptions.
         logbook_gaps (List): The logbook gaps.
         post1932_date (date): The post 1932 date.
+        model_weekly (bool): Whether to model weekly.
+        model_monthly (bool): Whether to model monthly.
+        model_daily (bool): Whether to model daily.
         train_all_data (bool): Whether to train all data.
         return_prophet_model (bool): Whether to return the Prophet model.
+        return_all_gap_forecasts (bool): Whether to return all gap forecasts.
         use_weekly_growth_cap (bool): Whether to use weekly growth cap.
         use_total_growth_cap (bool): Whether to use total growth cap.
     
@@ -151,10 +155,13 @@ def forecast_missing_subscriptions(weekly_subscriptions: pd.DataFrame, logbook_g
         gap_start_date = gap['start']
 
         data_before_gap = prepare_data_for_prophet(weekly_subscriptions, gap_start_date, post1932_date)
-        forecasted_subscriptions, forecasted_near_gap = forecast_gap_with_prophet(data_before_gap, gap, time_duration, use_weekly_growth_cap, growth_cap, model_weekly, model_monthly)
+        forecasted_subscriptions, forecasted_near_gap = forecast_gap_with_prophet(data_before_gap, gap, time_duration, use_weekly_growth_cap, growth_cap, model_weekly, model_monthly, model_daily)
         
         # Optional: Display or process forecast_near_gap as needed
         # display(forecast_near_gap.head())
+
+        if return_all_gap_forecasts:
+            all_gap_forecasts.append(forecasted_near_gap)
 
         if train_all_data:
             if use_total_growth_cap:
@@ -169,6 +176,8 @@ def forecast_missing_subscriptions(weekly_subscriptions: pd.DataFrame, logbook_g
     # Combine all forecasts into a single DataFrame
     if return_prophet_model:
         return prophet_model, pd.concat(all_forecasts)
+    elif return_all_gap_forecasts:
+        return pd.concat(all_gap_forecasts)
     else:
         return pd.concat(all_forecasts)
 

@@ -1,3 +1,7 @@
 pandas
 numpy
 jupyter
+datetimerange
+prophet
+altair
+copia

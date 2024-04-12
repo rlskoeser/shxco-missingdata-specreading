@@ -13,3 +13,6 @@ This folder includes code used for the member analysis and recommendations in th
 - [Interpret_Output_Results.ipynb](Interpret_Output_Results.ipynb)
 - [CollaborativeFiltering.ipynb](CollaborativeFiltering.ipynb)
 - [final_borrowers_table.R](final_borrowers_table.R)
+
+
+Additional related work that did not make it into the article can be found in [Appendix: Speculative Reading](../appendix/speculative_reading/)

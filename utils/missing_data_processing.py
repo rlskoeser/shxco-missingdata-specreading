@@ -15,6 +15,15 @@ alt.data_transformers.disable_max_rows()
 # Ignore warnings
 warnings.filterwarnings('ignore')
 
+# determine path to data dir relative to this file
+DATA_DIR = Path(__file__).parent.parent / "data"
+SOURCE_DATA_DIR = DATA_DIR / "source-data"
+
+# NOTE: relative paths won't work in colab unless
+# we make this code installable; can we detect and use github url?
+# https://raw.githubusercontent.com/rlskoeser/shxco-missingdata-specreading/main/data/
+
+
 def load_initial_data() -> pd.DataFrame:
     """Load the initial data from the CSV files.
     
@@ -22,14 +31,14 @@ def load_initial_data() -> pd.DataFrame:
         pd.DataFrame: The initial data."""
     # use v1.2 datasets; load from our repo for convenience
     csv_urls = {
-        # official published versions 
-        'members': 'https://raw.githubusercontent.com/rlskoeser/shxco-missingdata-specreading/main/data/source-data/SCoData_members_v1.2_2022-01.csv',
-        'books': 'https://raw.githubusercontent.com/rlskoeser/shxco-missingdata-specreading/main/data/source-data/SCoData_books_v1.2_2022-01.csv',
-        'events': 'https://raw.githubusercontent.com/rlskoeser/shxco-missingdata-specreading/main/data/source-data/SCoData_events_v1.2_2022-01.csv',
-
+        # official published versions available locally
+        "members": SOURCE_DATA_DIR / "SCoData_members_v1.2_2022-01.csv",
+        "books": SOURCE_DATA_DIR / "SCoData_books_v1.2_2022-01.csv",
+        "events": SOURCE_DATA_DIR / "SCoData_events_v1.2_2022-01.csv",
         # project-specific data
-        'partial_borrowers': 'https://raw.githubusercontent.com/rlskoeser/shxco-missingdata-specreading/main/data/partial_borrowers_collapsed.csv',
-        'borrow_overrides': 'https://raw.githubusercontent.com/rlskoeser/shxco-missingdata-specreading/main/data/long_borrow_overrides.csv'
+        # NOTE: now moved to appendix/speculative_reading; likely only used there
+        # "partial_borrowers": DATA_DIR / "partial_borrowers_collapsed.csv",
+        "borrow_overrides": DATA_DIR / "long_borrow_overrides.csv",
     }
 
     # load events

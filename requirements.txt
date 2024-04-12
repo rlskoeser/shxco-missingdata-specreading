@@ -5,3 +5,4 @@ datetimerange
 prophet
 altair
 copia
+vl-convert-python

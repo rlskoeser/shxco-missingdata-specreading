@@ -1,0 +1,220 @@
+---
+title: "Logbooks & Subscriptions Table Generator"
+output: github_document
+---
+
+This notebook generates a table of logbook gaps that helps detail what dates are not included in our analysis. The table is generated from the `skipped_logbook_periods.csv` file and the `updated_skipped_logbook_periods.csv` file. The table is saved as `logbook_gaps.html` in the `output` folder.
+
+## Load required packages
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# name required packages
+list.of.packages <- c("ggplot2", "glue", "gt", "tidyverse", "webshot", "paletteer", "gtExtras", "here")
+
+# install required packages, if necessary, and load them ----
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[, "Package"])]
+if (length(new.packages) > 0) {
+    install.packages(new.packages, repos = "https://cloud.r-project.org/")
+}
+
+# Instead of using require, we'll use library to load the packages
+lapply(list.of.packages, library, character.only = TRUE)
+
+```
+
+##  Load Data and Generate Tables
+
+```{r}
+read_csv_safe <- function(file_path) {
+  if (file.exists(file_path)) {
+    return(readr::read_csv(file_path, ))
+  } else {
+    stop(glue::glue("File {file_path} does not exist."))
+  }
+}
+
+# Function to convert all character columns to UTF-8
+convert_to_utf8 <- function(df) {
+  df[] <- lapply(df, function(x) {
+    if (is.character(x)) {
+      return(iconv(x, to = "UTF-8"))
+    }
+    x
+  })
+  df
+}
+```
+
+```{r}
+# Use here to build the paths to your CSV files
+skipped_periods_path <- here::here("appendix", "data", "skipped_logbook_periods.csv")
+skipped_periods_path
+updated_skipped_periods_path <- here::here("appendix", "data", "updated_skipped_logbook_periods.csv")
+subscriptions_path <- here::here("appendix", "data", "subscriptions_data.csv")
+
+# Now you can use these paths in your read_csv_safe function
+skipped_periods <- read_csv_safe(skipped_periods_path)
+updated_skipped_periods <- read_csv_safe(updated_skipped_periods_path)
+subscriptions <- read_csv_safe(subscriptions_path)
+
+# Apply the function to each data frame
+skipped_periods <- convert_to_utf8(skipped_periods)
+updated_skipped_periods <- convert_to_utf8(updated_skipped_periods)
+subscriptions <- convert_to_utf8(subscriptions)
+```
+
+
+## Logbook Tables
+
+### Logbook Gaps
+
+```{r}
+gap_table <- skipped_periods %>%
+    gt() %>%
+    tab_spanner(label = "The 7 large gaps in the logbooks", columns = c(logbook_dates, logbook_interval)) %>%
+    tab_spanner(label = "The 8 small gaps in the logbooks", columns = c(skipped_dates, skipped_interval)) %>%
+    cols_width(c(skipped_dates, logbook_dates) ~ px(300)) %>%
+    cols_label(
+        logbook_dates = md("Dates of Identified Gap"),
+        logbook_interval = "Duration of Gap",
+        skipped_dates = md("Dates of Identified Gap"),
+        skipped_interval = "Duration of Gap"
+    ) %>%
+    cols_align(align = "left", columns = c(skipped_dates, logbook_dates)) %>%
+    cols_align(align = "center", columns = c(skipped_interval, logbook_interval)) %>%
+    tab_header(
+        title = md("Identified Logbook Gaps"),
+        subtitle = md("Larger gaps on the left are included in our analyses, while smaller ones on the right are skipped.")
+    ) %>%
+    opt_table_font(font = list("Times New Roman", "Cochin", "Serif"), weight = "normal")
+
+gap_table
+```
+
+If you want to save the table as an image, you can use the following code:
+
+```{r}
+# Save the table as an image
+figure_file_path <- here::here("appendix", "figures", "logbook_gaps.png")
+gap_table %>%
+  gtsave(glue::glue("{figure_file_path}"))
+```
+
+### Updated Logbook Gaps
+
+```{r}
+updated_gap_table <- updated_skipped_periods %>%
+  gt() %>%
+  cols_width(
+    c(dates) ~ px(300),
+  )  %>%
+  cols_label(
+    dates = md("Dates of Identified Gap"),
+    interval = "Duration of Gap",
+  ) %>%
+  cols_hide(
+    columns = c(
+      status, start, end
+    )
+  ) %>% cols_align(
+    align = "left", columns = c(dates)
+  )  %>% cols_align(
+    align = "center", columns = c(interval)
+  ) %>% tab_header(
+    title = md('All Identified Logbook Gaps'),
+    subtitle = md('Longer included gaps are in bold, while shorter ones are skipped.')
+  ) %>% opt_table_font(
+    font = list( "Times New Roman",
+      "Cochin", "Serif"
+    ),
+    weight= 'normal'
+  ) %>% tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(
+      columns = c(interval, status),
+      rows = (status == 'included')
+    )
+  )
+updated_gap_table
+```
+
+If you want to save the table as an image, you can use the following code:
+
+```{r}
+# Save the table as an image
+figure_file_path <- here::here("appendix", "figures", "updated_logbook_gaps.png")
+updated_gap_table %>%
+  gtsave(glue::glue("{figure_file_path}"))
+```
+
+## Subscriptions Table
+
+```{r}
+plot_chart <- function(data) {
+  data %>%
+    ggplot(aes(x = year, y = counts)) +
+    geom_bar(stat = "identity") +
+    theme_void() +
+    theme(legend.position = "none")
+}
+```
+
+```{r}
+sub_plots <- subscriptions %>%
+  group_by(event_type, .drop = FALSE) %>%
+  summarise(sum_counts = sum(counts), year = year, counts = counts) %>%
+  arrange(desc(sum_counts)) %>%
+  select(-sum_counts) %>%
+  nest(subs = c(year, counts)) %>%
+  mutate(plot = map(subs, plot_chart))
+
+
+subs_table <- subscriptions %>%
+  group_by(event_type) %>%
+  summarise(counts = sum(counts)) %>%
+  arrange(desc(counts)) %>%
+  mutate(ggplot = NA) %>%
+  gt() %>%
+  text_transform(
+    locations = cells_body(c(ggplot)),
+    fn = function(x) {
+      map(sub_plots$plot, ggplot_image, height = px(25), aspect_ratio = 5)
+    }
+  ) %>%
+  cols_label(
+    ggplot = md("Event Frequency \nfrom 1919-1942"),
+    event_type = "Event Type",
+    counts = "Number of Events"
+  ) %>%
+  cols_align(align = "center", columns = everything()) %>%
+  tab_header(
+    title = md("Types of Membership Activity"),
+    subtitle = md("Separated by event category and summarizing overall activity.")
+  ) %>%
+  opt_table_font(
+    font = list( "Times New Roman",
+      "Cochin", "Serif"
+    ),
+    weight = "normal"
+  ) %>%
+  tab_footnote(
+    footnote = "Frequency not scaled across event types.",
+    locations = cells_column_labels(
+      columns = c(ggplot)
+    )
+  )
+
+subs_table
+```
+
+If you want to save the table as an image, you can use the following code:
+
+```{r}
+# Save the table as an image
+figure_file_path <- here::here("appendix", "figures", "subscriptions_table.png")
+subs_table %>%
+  gtsave(glue::glue("{figure_file_path}"))
+```

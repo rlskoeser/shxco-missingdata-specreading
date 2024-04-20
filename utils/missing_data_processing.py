@@ -2,6 +2,7 @@
 from datetime import timedelta, datetime, date
 import warnings
 from typing import Tuple
+from pathlib import Path
 
 # Related third party imports
 import altair as alt
@@ -16,8 +17,8 @@ alt.data_transformers.disable_max_rows()
 warnings.filterwarnings('ignore')
 
 # determine path to data dir relative to this file
-DATA_DIR = Path(__file__).parent.parent / "data"
-SOURCE_DATA_DIR = DATA_DIR / "source-data"
+DATA_DIR = (Path(__file__).parent.parent / "data").resolve()
+SOURCE_DATA_DIR = (DATA_DIR / "source_data").resolve()
 
 # NOTE: relative paths won't work in colab unless
 # we make this code installable; can we detect and use github url?

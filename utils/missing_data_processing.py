@@ -108,28 +108,28 @@ def generate_logbook_gaps(logbook_events_df: pd.DataFrame) -> Tuple[pd.DataFrame
     Returns:
         pd.DataFrame: The logbook gaps dataframe.
         pd.DataFrame: The logbooks weekly count dataframe."""
-    response = requests.get('https://raw.githubusercontent.com/rlskoeser/shxco-missingdata-specreading/main/data/logbook-dates.json')
-    logbook_dates = response.json()
-
+    logbook_dates = pd.read_json("../data/logbook-dates.json")
     # don't consider gaps shorter than 15 days
-    min_gap_days = 15
+    MIN_GAP_DAYS = 15
 
     logbook_gaps = []
     skipped_gaps = []
 
     oneday = timedelta(days=1)
 
+    # Sort the DataFrame by startDate
+    logbook_dates = logbook_dates.sort_values('startDate')
 
     for i in range(len(logbook_dates) - 1):
         # gaps are between the logbook dates, so gap start is end of the first
         # and gap end is the start of the next
 
         # gap start and end dates are now included in the range instead of bounds outside the range
-        gap_start = pd.to_datetime(logbook_dates[i]['endDate']) + oneday
-        gap_end = pd.to_datetime(logbook_dates[i+1]['startDate']) - oneday
+        gap_start = pd.to_datetime(logbook_dates.iloc[i]['endDate']) + oneday
+        gap_end = pd.to_datetime(logbook_dates.iloc[i+1]['startDate']) - oneday
         interval = { 'start': gap_start, 'end': gap_end, 'days': (gap_end - gap_start).days }
 
-        if interval['days'] > min_gap_days:
+        if interval['days'] > MIN_GAP_DAYS:
             logbook_gaps.append(interval) 
         elif interval['days'] > 0:  # ignore 0 and -1 duration "gaps"!
             skipped_gaps.append(interval)

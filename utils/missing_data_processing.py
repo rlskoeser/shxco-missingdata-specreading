@@ -24,14 +24,14 @@ SOURCE_DATA_DIR = (DATA_DIR / "source_data").resolve()
 # we make this code installable; can we detect and use github url?
 # https://raw.githubusercontent.com/rlskoeser/shxco-missingdata-specreading/main/data/
 
-def load_initial_data() -> pd.DataFrame:
+def load_initial_data() -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Load the initial data from the CSV files.
 
     This function loads the data from the CSV files stored in the 'SOURCE_DATA_DIR' and 'DATA_DIR' directories. The data includes information about members, books, and events. The 'events' data is returned as a pandas DataFrame.
 
     Returns:
-        pd.DataFrame: The initial 'events' data.
+        Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]: A tuple containing the 'events', 'members', 'books', and 'borrow_overrides' DataFrames.
     """
     # Define the paths to the CSV files. The 'members' and 'books' data are the official published versions and are available locally. The 'borrow_overrides' data is project-specific and is also available locally.
     csv_urls = {
@@ -43,9 +43,12 @@ def load_initial_data() -> pd.DataFrame:
 
     # Load the 'events' data from the corresponding CSV file. The 'low_memory' parameter is set to False to prevent low memory warnings.
     events_df = pd.read_csv(csv_urls['events'], low_memory=False)
+    members_df = pd.read_csv(csv_urls['members'], low_memory=False)
+    books_df = pd.read_csv(csv_urls['books'], low_memory=False)
+    borrow_overrides_df = pd.read_csv(csv_urls['borrow_overrides'], low_memory=False)
 
-    # Return the 'events' data.
-    return events_df
+    # Return the data
+    return events_df, members_df, books_df, borrow_overrides_df
 
 def process_events_data(events_df:pd.DataFrame) -> pd.DataFrame:
     """

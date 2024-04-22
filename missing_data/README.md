@@ -10,7 +10,8 @@ This folder includes code used for the estimates in the "Missing Data" section o
 
 - [ScoMissingMembershipActivities.ipynb](ScoMissingMembershipActivities.ipynb) This notebook includes estimates missing membership activities and code to generate figures 1-3 for our paper.
 - [ScoMissingMembers.ipyb](ScoMissingMembers.ipynb) This notebook includes estimates missing members and code to generate figures 4-6 for our paper.
-- [Sco_missing_borrowing_activity.ipynb](Sco_missing_borrowing_activity.ipynb) This notebook estimates minimum missing borrowing activity based on subscriptions and contains code to generate figure 8 for our paper.
+- [ScoCalculateBorrowingCapacity.ipynb](ScoCalculateBorrowingCapacity.ipynb) This notebook includes code to generate figure 7 for our paper.
+- [ScoMissingBorrowingActivity.ipynb](Sco_missing_borrowing_activity.ipynb) This notebook estimates minimum missing borrowing activity based on subscriptions and contains code to generate figure 8 for our paper.
 
 ### Archived Notebooks
 

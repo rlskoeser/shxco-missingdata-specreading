@@ -32,11 +32,13 @@ def save_altair_chart(chart, filename, scale_factor=1):
             raise ValueError("Only svg and png formats are supported")
 
 
-def raincloud_plot(dataset, fieldname, field_label):
+def raincloud_plot(dataset, fieldname, field_label, tooltip=None):
     """Create a raincloud plot for the density of the specified field
-    in the given dataset.  Returns an altair chart."""
+    in the given dataset. Takes an optional tooltip for the strip plot.
+    Returns an altair chart."""
 
     # create a density area plot of specified fieldname
+
     duration_density = (
         alt.Chart(dataset)
         .transform_density(
@@ -58,6 +60,12 @@ def raincloud_plot(dataset, fieldname, field_label):
 
     # Now create jitter plot of the same field
     # jittering / stripplot adapted from https://stackoverflow.com/a/71902446/9706217
+
+    # optional arguments to encode - currently only tooltip
+    opt_encode_args = {}
+    if tooltip is not None:
+        opt_encode_args["tooltip"] = tooltip
+
     stripplot = (
         alt.Chart(dataset)
         .mark_circle(size=30)
@@ -68,7 +76,7 @@ def raincloud_plot(dataset, fieldname, field_label):
                 axis=alt.Axis(labels=True),
             ),
             y=alt.Y("jitter:Q", title=None, axis=None),
-            # tooltip=alt.Tooltip(["item", "dates", "days out"]),
+            **opt_encode_args
         )
         .transform_calculate(jitter="(random() / 200) - 0.0052")
         .properties(

@@ -25,33 +25,47 @@ SOURCE_DATA_DIR = (DATA_DIR / "source_data").resolve()
 # https://raw.githubusercontent.com/rlskoeser/shxco-missingdata-specreading/main/data/
 
 
+# Ppaths to the CSV files. The 'members', 'books', and 'events' data
+# are the official published versions and are available locally.
+# The 'borrow_overrides' data is project-specific and is also available locally.
+
+CSV_PATHS = {
+    "members": SOURCE_DATA_DIR / "SCoData_members_v1.2_2022-01.csv",
+    "books": SOURCE_DATA_DIR / "SCoData_books_v1.2_2022-01.csv",
+    "events": SOURCE_DATA_DIR / "SCoData_events_v1.2_2022-01.csv",
+    "borrow_overrides": DATA_DIR / "long_borrow_overrides.csv",
+}
+
+
 def load_initial_data() -> (
     Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]
 ):
     """
-    Load the initial data from the CSV files.
+    Load datasets from CSV files.
 
-    This function loads the data from the CSV files stored in the 'SOURCE_DATA_DIR' and 'DATA_DIR' directories. The data includes information about members, books, and events. The 'events' data is returned as a pandas DataFrame.
+    This function loads the data from the CSV files stored in the
+    'SOURCE_DATA_DIR' and 'DATA_DIR' directories. The data includes
+    information about members, books, and events. The 'events' data is
+    returned as a pandas DataFrame.
 
     Returns:
         Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]: A tuple containing the 'events', 'members', 'books', and 'borrow_overrides' DataFrames.
     """
-    # Define the paths to the CSV files. The 'members' and 'books' data are the official published versions and are available locally. The 'borrow_overrides' data is project-specific and is also available locally.
-    csv_urls = {
-        "members": SOURCE_DATA_DIR / "SCoData_members_v1.2_2022-01.csv",
-        "books": SOURCE_DATA_DIR / "SCoData_books_v1.2_2022-01.csv",
-        "events": SOURCE_DATA_DIR / "SCoData_events_v1.2_2022-01.csv",
-        "borrow_overrides": DATA_DIR / "long_borrow_overrides.csv",
-    }
-
-    # Load the 'events' data from the corresponding CSV file. The 'low_memory' parameter is set to False to prevent low memory warnings.
-    events_df = pd.read_csv(csv_urls["events"], low_memory=False)
-    members_df = pd.read_csv(csv_urls["members"], low_memory=False)
-    books_df = pd.read_csv(csv_urls["books"], low_memory=False)
-    borrow_overrides_df = pd.read_csv(csv_urls["borrow_overrides"], low_memory=False)
+    # Load the data from the corresponding CSV file.
+    # The 'low_memory' parameter is set to False to prevent low memory warnings.
+    events_df = pd.read_csv(CSV_PATHS["events"], low_memory=False)
+    members_df = pd.read_csv(CSV_PATHS["members"], low_memory=False)
+    books_df = pd.read_csv(CSV_PATHS["books"], low_memory=False)
+    borrow_overrides_df = pd.read_csv(CSV_PATHS["borrow_overrides"], low_memory=False)
 
     # Return the data
     return events_df, members_df, books_df, borrow_overrides_df
+
+
+def short_id(uri):
+    """Generate short IDs for members and items based on S&co URI.
+    The short ID is the last non-slash part of the URI."""
+    return uri.rstrip("/").split("/")[-1] if pd.notna(uri) else None
 
 
 def preprocess_events_data(events_df: pd.DataFrame) -> pd.DataFrame:
@@ -75,14 +89,9 @@ def preprocess_events_data(events_df: pd.DataFrame) -> pd.DataFrame:
         ["first_member_uri", "second_member_uri"]
     ] = events_df.member_uris.str.split(";", expand=True)
 
-    # Generate short IDs for members and items. The short ID is the
-    # second last part of the URI. For now, we only work with the first member for shared accounts.
-    events_df["member_id"] = events_df.first_member_uri.apply(
-        lambda x: x.split("/")[-2]
-    )
-    events_df["item_id"] = events_df.item_uri.apply(
-        lambda x: x.split("/")[-2] if pd.notna(x) else None
-    )
+    # Generate short IDs for members and items.
+    events_df["member_id"] = events_df.first_member_uri.apply(short_id)
+    events_df["item_id"] = events_df.item_uri.apply(short_id)
 
     # Return the processed 'events' DataFrame.
     return events_df

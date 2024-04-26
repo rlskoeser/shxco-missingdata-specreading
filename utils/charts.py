@@ -30,3 +30,55 @@ def save_altair_chart(chart, filename, scale_factor=1):
                 f.write(vlc.vegalite_to_png(chart.to_dict(), scale=scale_factor))
         else:
             raise ValueError("Only svg and png formats are supported")
+
+
+def raincloud_plot(dataset, fieldname, field_label):
+    """Create a raincloud plot for the density of the specified field
+    in the given dataset.  Returns an altair chart."""
+
+    # create a density area plot of specified fieldname
+    duration_density = (
+        alt.Chart(dataset)
+        .transform_density(
+            fieldname,
+            as_=[fieldname, "density"],
+        )
+        .mark_area(orient="vertical")
+        .encode(
+            x=alt.X(fieldname, title=None, axis=alt.X(labels=False, ticks=False)),
+            y=alt.Y(
+                "density:Q",
+                # suppress labels and ticks because we're going to combine this
+                title=None,
+                axis=alt.Axis(labels=False, values=[0], grid=False, ticks=False),
+            ),
+        )
+        .properties(height=100, width=800)
+    )
+
+    # Now create jitter plot of the same field
+    # jittering / stripplot adapted from https://stackoverflow.com/a/71902446/9706217
+    stripplot = (
+        alt.Chart(dataset)
+        .mark_circle(size=30)
+        .encode(
+            x=alt.X(
+                fieldname,
+                title=field_label,
+                axis=alt.Axis(labels=True),
+            ),
+            y=alt.Y("jitter:Q", title=None, axis=None),
+            # tooltip=alt.Tooltip(["item", "dates", "days out"]),
+        )
+        .transform_calculate(jitter="(random() / 200) - 0.0052")
+        .properties(
+            height=120,
+            width=800,
+        )
+    )
+
+    # use vertical concat to combine the two plots together
+    raincloud_plot = alt.vconcat(duration_density, stripplot).configure_concat(
+        spacing=0
+    )
+    return raincloud_plot

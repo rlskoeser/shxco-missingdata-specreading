@@ -39,4 +39,4 @@ jobs:
 
       # run treon on specific notebooks for now, since not all are passing!
       - name: Run treon for notebooks
-        run: treon speculative_reading/HemingwayBorrowing.ipynb
+        run: treon speculative_reading/HemingwayBorrowing.ipynb speculative_reading/PartialBorrowers.ipynb

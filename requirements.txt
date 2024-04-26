@@ -7,4 +7,3 @@ altair
 copia
 vl-convert-python
 seaborn
-ptitprince

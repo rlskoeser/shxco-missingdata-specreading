@@ -4,7 +4,7 @@ from typing import Tuple
 
 # Specify the path to the data directory
 DATA_DIR = os.path.dirname(__file__)
-SOURCE_DATA_DIR = os.path.join(DATA_DIR, "source-data")
+SOURCE_DATA_DIR = os.path.join(DATA_DIR, "source_data")
 
 def get_csv_path(filename: str) -> str:
     """

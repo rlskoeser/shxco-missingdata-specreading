@@ -1,4 +1,3 @@
-
 import pandas as pd
 pd.options.mode.chained_assignment = None
 from datetime import datetime
@@ -9,7 +8,7 @@ import sys
 sys.path.append("..")
 from data.dataset import get_shxco_data
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+DATA_DIR = os.path.join(os.path.dirname(__file__), "source_data")
 
 def get_longborrow_overides(events_df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -52,7 +51,7 @@ def get_longborrow_overides(events_df: pd.DataFrame) -> pd.DataFrame:
         ] = borrow.borrow_duration_days
     return events_df
 
-def load_data() -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def process_initial_datasets() -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Load in initial datasets
     
     Returns:
@@ -73,7 +72,7 @@ def load_data() -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     
     return members_df, books_df, events_df
 
-def sunday_shoppers(events_df: pd.DataFrame) -> pd.DataFrame:
+def get_sunday_shoppers(events_df: pd.DataFrame) -> pd.DataFrame:
     """Returns members with in-shop events on sundays
     
     Parameters:
@@ -115,7 +114,7 @@ def sunday_shoppers(events_df: pd.DataFrame) -> pd.DataFrame:
     return sunday_shoppers_df
 
 
-def post1942_events(events_df: pd.DataFrame) -> pd.DataFrame:
+def get_post1942_events(events_df: pd.DataFrame) -> pd.DataFrame:
     """Returns members with activity after the shop officially closed
     
     Parameters:
@@ -134,7 +133,7 @@ def post1942_events(events_df: pd.DataFrame) -> pd.DataFrame:
     return postshop_events
 
 
-def missing_books(events_df: pd.DataFrame) -> pd.DataFrame:
+def get_missing_books(events_df: pd.DataFrame) -> pd.DataFrame:
     """Returns members who didn't return books. We define missing books as those with no return date, marked on the card as missing by Beach or her assistants
 
     Parameters:
@@ -148,7 +147,7 @@ def missing_books(events_df: pd.DataFrame) -> pd.DataFrame:
     return missing_books_df
 
 
-def unknown_borrow_status(events_df : pd.DataFrame) -> pd.DataFrame:
+def get_unknown_borrow_status(events_df : pd.DataFrame) -> pd.DataFrame:
     """Return books with unknown borrow end status, that is we don't know what happened to the book, but no return date is documented.
 
     Parameters:
@@ -187,7 +186,7 @@ def get_member_usage(row: pd.Series, subscription_events: pd.DataFrame, borrow_e
     return vols, books
 
 
-def overborrows(members_df: pd.DataFrame, events_df: pd.DataFrame) -> pd.DataFrame:
+def get_overborrows(members_df: pd.DataFrame, events_df: pd.DataFrame) -> pd.DataFrame:
     """Returns members who exceeded their subscription allowance
     
     Parameters:
@@ -277,7 +276,7 @@ def overborrows(members_df: pd.DataFrame, events_df: pd.DataFrame) -> pd.DataFra
     return overborrows_df
 
 
-def longborrows(events_df: pd.DataFrame) -> pd.DataFrame:
+def get_longborrows(events_df: pd.DataFrame) -> pd.DataFrame:
     """Returns the long-term borrowers, which is members who kept books out a year or longer
 
     Parameters:
@@ -291,7 +290,7 @@ def longborrows(events_df: pd.DataFrame) -> pd.DataFrame:
     return longborrows_df
 
 
-def group_types(row: pd.DataFrame) -> pd.DataFrame:
+def get_group_types(row: pd.DataFrame) -> pd.DataFrame:
     """Group members or books with their types and counts
     
     Parameters:
@@ -314,14 +313,14 @@ def calculate_exceptional_categories(write_to_csv: bool = False) -> Tuple[pd.Dat
     
     Returns:
     Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]: The members, books, and events dataframes with the exceptional categories."""
-    members_df, books_df, events_df = load_data()
+    members_df, books_df, events_df = process_initial_datasets()
     event_sets = {
-        'sunday_shopers': sunday_shoppers(events_df),
-        'post1942_events': post1942_events(events_df),
-        'missing_events': missing_books(events_df),
-        'unknown_borrows': unknown_borrow_status(events_df),
-        'overborrows': overborrows(members_df, events_df),
-        'longterm_borrows': longborrows(events_df),
+        'sunday_shopers': get_sunday_shoppers(events_df),
+        'post1942_events': get_post1942_events(events_df),
+        'missing_events': get_missing_books(events_df),
+        'unknown_borrows': get_unknown_borrow_status(events_df),
+        'overborrows': get_overborrows(members_df, events_df),
+        'longterm_borrows': get_longborrows(events_df),
     }
     event_dfs = []
     for label, events in event_sets.items():
@@ -345,7 +344,7 @@ def calculate_exceptional_categories(write_to_csv: bool = False) -> Tuple[pd.Dat
     exceptional_events.exceptional_types.fillna('', inplace=True)
 
     #Exceptional Books
-    book_counts = subset_events[subset_events.item_uri.isna() == False][[
+    book_counts = subset_events[subset_events.item_uri.notna()][[
         'item_uri', 'type']].groupby(['item_uri', 'type']).size().reset_index(name='counts')
     book_counts = book_counts.rename(
         columns={'item_uri': 'id'})
@@ -397,7 +396,7 @@ def get_shxco_exceptional_data() -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFra
     return (exceptional_members, exceptional_books, exceptional_events)
 
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
     # load_data()
-    calculate_exceptional_categories(True)
+    # calculate_exceptional_categories(True)
     # get_shxco_exceptional_data()

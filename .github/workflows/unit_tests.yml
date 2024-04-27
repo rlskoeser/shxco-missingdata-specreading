@@ -38,5 +38,8 @@ jobs:
         run: python -m pytest
 
       # run treon on specific notebooks for now, since not all are passing!
-      - name: Run treon to check notebooks
+      - name: Run treon to check selected speculative_reading notebooks
         run: treon speculative_reading/HemingwayBorrowing.ipynb speculative_reading/PartialBorrowers.ipynb
+
+      - name: Run treon to check selected missing_data notebooks
+        run: treon missing_data/ScoCalculateBorrowingCapacity.ipynb missing_data/ScoMissingBorrowingActivity.ipynb

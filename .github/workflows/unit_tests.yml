@@ -1,0 +1,42 @@
+name: unit tests
+
+on:
+  push: # run on every push or PR to any branch
+  pull_request:
+
+jobs:
+  python-unit:
+    name: Python unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+
+      # Base python cache on the hash of  requirements.txt file
+      # if the file changes, the cache is invalidated.
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            pip-${{ hashFiles('requirements.txt') }}
+            pip-
+
+      - name: Install python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install test dependencies
+        run: pip install pytest treon
+
+      - name: Run pytest for python utility code
+        run: python -m pytest
+
+      # run treon on specific notebooks for now, since not all are passing!
+      - name: Run treon for notebooks
+        run: treon speculative_reading/HemingwayBorrowing.ipynb

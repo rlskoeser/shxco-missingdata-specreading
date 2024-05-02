@@ -42,4 +42,4 @@ jobs:
         run: treon speculative_reading/HemingwayBorrowing.ipynb speculative_reading/PartialBorrowers.ipynb
 
       - name: Run treon to check selected missing_data notebooks
-        run: treon missing_data/ScoCalculateBorrowingCapacity.ipynb missing_data/ScoMissingBorrowingActivity.ipynb missing_data/MissingBooks.ipynb
+        run: treon missing_data/CalculateBorrowingCapacity.ipynb missing_data/MissingBorrowingActivity.ipynb missing_data/MissingBooks.ipynb

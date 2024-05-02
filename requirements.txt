@@ -7,3 +7,6 @@ altair
 copia
 vl-convert-python
 seaborn
+# we used an unreleased version of copia with label options for plots
+git+https://github.com/mikekestemont/copia@3e57da4
+matplotlib==3.7

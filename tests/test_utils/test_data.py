@@ -1,4 +1,7 @@
+from unittest.mock import patch
+
 import pandas as pd
+import pytest
 
 from utils import missing_data_processing
 
@@ -27,3 +30,32 @@ def test_load_initial_data():
     data = missing_data_processing.load_initial_data()
     assert all([isinstance(df, pd.DataFrame) for df in data])
     assert all([not df.empty for df in data])
+
+
+@patch("utils.missing_data_processing.pd")
+@patch("utils.missing_data_processing.preprocess_events_data")
+@patch("utils.missing_data_processing.preprocess_books_data")
+def test_get_preprocessed_data(mock_preprocess_books, mock_preprocess_events, mock_pd):
+    # no datasets specified: should return all
+    data = missing_data_processing.get_preprocessed_data()
+    for dataset in missing_data_processing.CSV_PATHS.keys():
+        assert dataset in data
+    assert mock_pd.read_csv.call_count == 4
+    mock_preprocess_events.assert_called()
+    mock_preprocess_books.assert_called()
+
+    # reset mocks
+    for m in [mock_preprocess_books, mock_preprocess_events, mock_pd]:
+        m.reset_mock()
+
+    # test loading selected datasets
+    data = missing_data_processing.get_preprocessed_data("books", "borrow_overrides")
+    assert len(data.keys()) == 2
+    assert "books" in data
+    assert "borrow_overrides" in data
+    mock_preprocess_events.assert_not_called()
+    mock_preprocess_books.assert_called()
+
+    # test unknown dataset
+    with pytest.raises(ValueError):
+        missing_data_processing.get_preprocessed_data("foo", "bar")

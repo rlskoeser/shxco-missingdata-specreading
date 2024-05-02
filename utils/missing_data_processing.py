@@ -62,6 +62,45 @@ def load_initial_data() -> (
     return events_df, members_df, books_df, borrow_overrides_df
 
 
+def get_preprocessed_data(*datasets) -> Dict[str, pd.DataFrame]:
+    """
+    Load datasets from CSV files as pandas DataFrame and apply common
+    preprocessing.
+
+    Takes an optional list of datasets to load, which should be
+    any of 'events', 'members', 'books', and 'borrow_overrides'.
+    If not specified, all datasets are loaded.
+
+    'SOURCE_DATA_DIR' and 'DATA_DIR' directories. The data includes
+    information about members, books, and events. The 'events' data is
+    returned as a pandas DataFrame.
+
+    Returns:
+        Dict[String, pd.DataFrame]: A dictionary with the requested DataFrames
+    """
+    if not len(datasets):
+        datasets = CSV_PATHS.keys()
+    else:
+        # check for any unknown dataset names
+        unknowns = [d for d in datasets if d not in CSV_PATHS]
+        if len(unknowns):
+            raise ValueError(
+                f"Unknown dataset: {', '.join([str(u) for u in unknowns])}"
+            )
+
+    data = {}
+    for dataset in datasets:
+        data[dataset] = pd.read_csv(CSV_PATHS[dataset], low_memory=False)
+
+    # preprocess any of these that are present
+    if "events" in datasets:
+        data["events"] = preprocess_events_data(data["events"])
+    if "books" in datasets:
+        data["books"] = preprocess_books_data(data["books"])
+
+    return data
+
+
 def short_id(uri):
     """Generate short IDs for members and items based on S&co URI.
     The short ID is the last non-slash part of the URI."""
@@ -95,6 +134,26 @@ def preprocess_events_data(events_df: pd.DataFrame) -> pd.DataFrame:
 
     # Return the processed 'events' DataFrame.
     return events_df
+
+
+def preprocess_books_data(books_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Pre-processing for book data.
+
+    This function processes the 'books' data by generating short-form IDs
+    from the longer project URIs.
+
+    Args:
+        books_df (pd.DataFrame): The initial 'books' DataFrame.
+
+    Returns:
+        pd.DataFrame: The processed 'books' DataFrame.
+    """
+    # Generate short IDs from item URIs
+    books_df["id"] = books_df.uri.apply(short_id)
+
+    # Return the processed 'books' DataFrame.
+    return books_df
 
 
 def generate_logbooks_events(events_df: pd.DataFrame) -> pd.DataFrame:

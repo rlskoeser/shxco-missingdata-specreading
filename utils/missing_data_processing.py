@@ -164,6 +164,11 @@ def get_logbook_events(events_df: pd.DataFrame) -> pd.DataFrame:
     It then selects relevant columns and creates a new column 'logbook_date'
     that contains the subscription purchase date if available, otherwise the start date.
 
+    The rationale is that the subscription purchase date is the date the
+    member purchased their subscription, but in the case where we don't have
+    subscription purchase dates, we can use their start date for borrowing as a proxy.
+
+
     Args:
         events_df (pd.DataFrame): The initial 'events' DataFrame.
 
@@ -343,7 +348,7 @@ def exclude_gap_events(
 
 
 def identify_logbook_gaps(
-    logbook_events_df: pd.DataFrame,
+    logbook_events_df: pd.DataFrame, output_gaps: bool = True
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Generate logbook gaps from the logbook events dataframe.
@@ -355,6 +360,7 @@ def identify_logbook_gaps(
 
     Args:
         logbook_events_df (pd.DataFrame): The logbook events dataframe.
+        print_gaps (boolean): should identified gaps be printed? (default: True)
 
     Returns:
         pd.DataFrame: The logbook gaps dataframe.
@@ -395,8 +401,9 @@ def identify_logbook_gaps(
             )
 
     # Print the identified gaps and skipped gaps.
-    print_gaps(logbook_gaps, "large")
-    print_gaps(skipped_gaps, "small")
+    if output_gaps:
+        print_gaps(logbook_gaps, "large")
+        print_gaps(skipped_gaps, "small")
 
     # Filter the logbook events to exclude those occurring during the identified gaps.
     logbook_events_nogaps = exclude_gap_events(logbook_events_df, logbook_gaps)
@@ -461,19 +468,9 @@ def get_member_events(
     ].dropna(subset=["date"])
     members_added = members_added[members_added["date"] < datetime(1942, 1, 1)]
 
-    # Group the events by member ID and get the first event for each member.
-    members_grouped = members_added[["member_id", "date"]].groupby("member_id")
-    members_first_dates = members_grouped.first().reset_index()
-
-    # Calculate the yearly count of new members.
-    newmember_yearly_count = (
-        members_first_dates.groupby([pd.Grouper(key="date", freq="Y")])["member_id"]
-        .count()
-        .reset_index()
-    )
-    newmember_yearly_count.rename(columns={"member_id": "total"}, inplace=True)
-
-    # Define the order of event types.
+    # Create a custom order for the event types.
+    # The main order we care about is having 'Subscription' first.
+    # The order of the other event types matters less, but 'Reimbursement' is expected to be last.
     event_type = CategoricalDtype(
         categories=[
             "Subscription",
@@ -496,6 +493,20 @@ def get_member_events(
 
     # Sort the member events by date and event type.
     member_events = member_events.sort_values(by=["date", "event_type"])
+
+    # Group the events by member ID and get the first event for each member.
+    members_grouped = member_events[
+        ["member_id", "date", "event_type", "source_type"]
+    ].groupby("member_id")
+    members_first_dates = members_grouped.first().reset_index()
+
+    # Calculate the yearly count of new members.
+    newmember_yearly_count = (
+        members_first_dates.groupby([pd.Grouper(key="date", freq="Y")])["member_id"]
+        .count()
+        .reset_index()
+    )
+    newmember_yearly_count.rename(columns={"member_id": "total"}, inplace=True)
 
     return member_events, newmember_yearly_count, members_first_dates
 

@@ -156,12 +156,13 @@ def preprocess_books_data(books_df: pd.DataFrame) -> pd.DataFrame:
     return books_df
 
 
-def generate_logbooks_events(events_df: pd.DataFrame) -> pd.DataFrame:
+def get_logbook_events(events_df: pd.DataFrame) -> pd.DataFrame:
     """
-    Generate logbook events from the events dataframe.
+    Get logbook events from the events dataframe.
 
-    This function filters the 'events_df' DataFrame to include only logbook events.
-    It then selects relevant columns and creates a new column 'logbook_date' that contains the subscription purchase date if available, otherwise the start date.
+    This function filters the 'events_df' DataFrame to only logbook events.
+    It then selects relevant columns and creates a new column 'logbook_date'
+    that contains the subscription purchase date if available, otherwise the start date.
 
     Args:
         events_df (pd.DataFrame): The initial 'events' DataFrame.
@@ -188,12 +189,17 @@ def generate_logbooks_events(events_df: pd.DataFrame) -> pd.DataFrame:
     ]
 
     # Convert the 'start_date' and 'subscription_purchase_date' columns to datetime format.
-    logbook_events_df["start_date"] = pd.to_datetime(logbook_events_df["start_date"])
+    logbook_events_df["start_date"] = pd.to_datetime(
+        logbook_events_df["start_date"], format="ISO8601", errors="coerce"
+    )
     logbook_events_df["subscription_purchase_date"] = pd.to_datetime(
-        logbook_events_df["subscription_purchase_date"]
+        logbook_events_df["subscription_purchase_date"],
+        format="ISO8601",
+        errors="coerce",
     )
 
-    # Create a new column 'logbook_date' that contains the subscription purchase date if available, otherwise the start date.
+    # Create a new column 'logbook_date' that contains the subscription
+    # purchase date if available, otherwise the start date.
     logbook_events_df["logbook_date"] = logbook_events_df.apply(
         lambda row: row.subscription_purchase_date
         if pd.notna(row.subscription_purchase_date)
@@ -231,15 +237,20 @@ def earliest_date(row: pd.Series) -> date:
         return min(dates)
 
 
-def generate_membership_events(events_df: pd.DataFrame) -> pd.DataFrame:
+def get_membership_events(events_df: pd.DataFrame) -> pd.DataFrame:
     """
-    Generate membership events from the events dataframe.
+    Get membership events from the events dataframe.
 
-    This function filters the 'events_df' DataFrame to include only membership events,
-    which are defined as events of type 'Renewal', 'Subscription', 'Reimbursement', 'Supplement', or 'Separate Payment'.
-    It then creates a new column 'earliest_date' that contains the earliest date among the 'start_date',
-    'subscription_purchase_date', and 'end_date' columns for each event.
-    Finally, it creates a new column 'date' that contains the 'earliest_date' values converted to datetime format.
+    This function filters the 'events_df' DataFrame to  only membership events,
+    which are defined as events of type 'Renewal', 'Subscription', 'Reimbursement',
+    'Supplement', or 'Separate Payment'.
+
+    It then creates a new column 'earliest_date' that contains the earliest date
+    among the 'start_date', 'subscription_purchase_date', and 'end_date'
+    columns for each event.
+
+    Finally, it creates a new column 'date' that contains the 'earliest_date'
+    values converted to datetime format.
 
     Args:
         events_df (pd.DataFrame): The initial 'events' DataFrame.
@@ -265,7 +276,7 @@ def generate_membership_events(events_df: pd.DataFrame) -> pd.DataFrame:
 
     # Create a new column 'date' that contains the 'earliest_date' values converted to datetime format.
     membership_events["date"] = pd.to_datetime(
-        membership_events["earliest_date"], errors="coerce"
+        membership_events["earliest_date"], format="ISO8601", errors="coerce"
     )
 
     # Return the membership events DataFrame.
@@ -331,7 +342,7 @@ def exclude_gap_events(
     return events_nogaps_df
 
 
-def generate_logbook_gaps(
+def identify_logbook_gaps(
     logbook_events_df: pd.DataFrame,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
@@ -411,14 +422,19 @@ def generate_logbook_gaps(
     return logbook_gaps_df, logbooks_weekly_count, logbook_gaps, logbook_events_nogaps
 
 
-def generate_member_events(
+def get_member_events(
     events_df: pd.DataFrame,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
-    Generate member events from the events dataframe.
+    Get member events from the events dataframe.
 
-    This function processes the 'events_df' DataFrame to generate member events and calculate the yearly count of new members. It first processes the events data and identifies the earliest known date for each event. It then filters the events to
-    include only those that occurred before 1942 and groups them by member ID to get the first event for each member. Finally, it calculates the yearly count of new members and sorts the member events by date and event type.
+    This function processes the 'events_df' DataFrame to generate member
+    events and calculate the yearly count of new members. It first processes
+    the events data and identifies the earliest known date for each event.
+    It then filters the events to include only those that occurred before 1942
+    and groups them by member ID to get the first event for each member.
+    Finally, it calculates the yearly count of new members and sorts the
+    member events by date and event type.
 
     Args:
         events_df (pd.DataFrame): The events dataframe.
@@ -428,7 +444,7 @@ def generate_member_events(
         pd.DataFrame: The new member yearly count dataframe.
     """
     # Process the events data.
-    events_df = process_events_data(events_df)
+    events_df = preprocess_events_data(events_df)
 
     # Create a copy of the events DataFrame and identify the earliest known date for each event.
     member_dates = events_df.copy()
@@ -436,7 +452,7 @@ def generate_member_events(
 
     # Convert the 'earliest_date' column to datetime format.
     member_dates["date"] = pd.to_datetime(
-        member_dates["earliest_date"], errors="coerce"
+        member_dates["earliest_date"], format="ISO8601", errors="coerce"
     )
 
     # Filter the events to include only those with known dates and that occurred before 1942.
@@ -484,11 +500,16 @@ def generate_member_events(
     return member_events, newmember_yearly_count, members_first_dates
 
 
-def generate_newmember_subscriptions(member_events, logbook_gaps):
+def get_newmember_subscriptions(member_events, logbook_gaps):
     """
-    Generate new member subscriptions from the member events dataframe.
+    Get new member subscriptions from the member events dataframe.
 
-    This function filters the 'member_events' DataFrame to include only logbook events of type 'Subscription' or 'Renewal', and groups them by member ID to get the first event for each member. It then excludes any events occurring during the identified gaps in the logbooks. Finally, it calculates the yearly and weekly counts of new member subscriptions.
+    This function filters the 'member_events' DataFrame to include
+    only logbook events of type 'Subscription' or 'Renewal', and
+    groups them by member ID to get the first event for each member.
+    It then excludes any events occurring during the identified gaps
+    in the logbooks. Finally, it calculates the yearly and weekly
+    counts of new member subscriptions.
 
     Args:
         member_events (pd.DataFrame): The member events dataframe.

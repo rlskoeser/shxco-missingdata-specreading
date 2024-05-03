@@ -1,0 +1,4 @@
+# pyproject.toml
+[tool.pytest.ini_options]
+minversion = "8.1"
+pythonpath = "."

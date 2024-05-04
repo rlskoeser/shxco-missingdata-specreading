@@ -1,4 +1,5 @@
 from unittest.mock import patch
+from datetime import datetime
 
 import pandas as pd
 import pytest
@@ -59,3 +60,16 @@ def test_get_preprocessed_data(mock_preprocess_books, mock_preprocess_events, mo
     # test unknown dataset
     with pytest.raises(ValueError):
         missing_data_processing.get_preprocessed_data("foo", "bar")
+
+
+def test_get_logbook_events():
+    data = missing_data_processing.get_preprocessed_data("events")
+    logbook_df = missing_data_processing.get_logbook_events(data["events"])
+    # check new column has been added and is correct time
+    assert "logbook_date" in logbook_df.columns
+    assert logbook_df.logbook_date.dtype == "datetime64[ns]"
+    assert len(logbook_df[logbook_df.logbook_date.isna()]) == 0  # all values set
+
+    # check changed types
+    assert logbook_df.start_date.dtype == "datetime64[ns]"
+    assert logbook_df.subscription_purchase_date.dtype == "datetime64[ns]"

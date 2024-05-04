@@ -37,9 +37,10 @@ jobs:
       - name: Run pytest for python utility code
         run: python -m pytest
 
-      # run treon on specific notebooks for now, since not all are passing!
+      # run treon on specific notebooks for now, since not all are passing or need to be tested
+      - name: Run treon to check selected missing_data notebooks
+        run: treon missing_data/CalculateBorrowingCapacity.ipynb missing_data/MissingBorrowingActivity.ipynb missing_data/MissingBooks.ipynb missing_data/MissingMembers.ipynb missing_data/MissingMembershipActivities.ipynb
+
       - name: Run treon to check selected speculative_reading notebooks
         run: treon speculative_reading/HemingwayBorrowing.ipynb speculative_reading/PartialBorrowers.ipynb
 
-      - name: Run treon to check selected missing_data notebooks
-        run: treon missing_data/CalculateBorrowingCapacity.ipynb missing_data/MissingBorrowingActivity.ipynb missing_data/MissingBooks.ipynb

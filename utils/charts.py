@@ -61,14 +61,25 @@ def raincloud_plot(dataset, fieldname, field_label, tooltip=None):
     # Now create jitter plot of the same field
     # jittering / stripplot adapted from https://stackoverflow.com/a/71902446/9706217
 
-    # optional arguments to encode - currently only tooltip
+    # optional behavior when tooltip is set
     opt_encode_args = {}
+    selection_opts = []
+    highlight_color = alt.value("#ff7f0e")
+    default_color = alt.value("rgba(31, 119, 180, 0)")  # transparent
     if tooltip is not None:
         opt_encode_args["tooltip"] = tooltip
+        # if tooltip is enabled, make selection easier:
+        # define a single selection that chooses the nearest point
+        nearest = alt.selection_single(on="mouseover", nearest=True)
+        selection_opts.append(nearest)
+        # add a stroke to outline; transparent if not seleted,  otherwise highlight
+        opt_encode_args["stroke"] = alt.condition(
+            ~nearest, default_color, highlight_color
+        )
 
     stripplot = (
         alt.Chart(dataset)
-        .mark_circle(size=30)
+        .mark_circle(size=50)
         .encode(
             x=alt.X(
                 fieldname,
@@ -76,13 +87,14 @@ def raincloud_plot(dataset, fieldname, field_label, tooltip=None):
                 axis=alt.Axis(labels=True),
             ),
             y=alt.Y("jitter:Q", title=None, axis=None),
-            **opt_encode_args
+            **opt_encode_args,
         )
         .transform_calculate(jitter="(random() / 200) - 0.0052")
         .properties(
             height=120,
             width=800,
         )
+        .add_selection(*selection_opts)
     )
 
     # use vertical concat to combine the two plots together

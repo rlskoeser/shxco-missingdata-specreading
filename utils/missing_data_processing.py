@@ -91,7 +91,9 @@ def get_preprocessed_data(*datasets) -> Dict[str, pd.DataFrame]:
     if "events" in datasets:
         data["events"] = preprocess_events_data(data["events"])
     if "books" in datasets:
-        data["books"] = preprocess_books_data(data["books"])
+        data["books"] = preprocess_shxco_data(data["books"])
+    if "members" in datasets:
+        data["members"] = preprocess_shxco_data(data["members"])
 
     return data
 
@@ -131,24 +133,24 @@ def preprocess_events_data(events_df: pd.DataFrame) -> pd.DataFrame:
     return events_df
 
 
-def preprocess_books_data(books_df: pd.DataFrame) -> pd.DataFrame:
+def preprocess_shxco_data(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Pre-processing for book data.
+    Pre-processing for book or member data.
 
-    This function processes the 'books' data by generating short-form IDs
-    from the longer project URIs.
+    This function processes the 'books' or 'members' data by generating
+    short-form IDs from the longer project URIs.
 
     Args:
-        books_df (pd.DataFrame): The initial 'books' DataFrame.
+        df (pd.DataFrame): The initial 'books' or 'members' DataFrame.
 
     Returns:
-        pd.DataFrame: The processed 'books' DataFrame.
+        pd.DataFrame: processed 'books' or 'members' DataFrame.
     """
     # Generate short IDs from item URIs
-    books_df["id"] = books_df.uri.apply(short_id)
+    df["id"] = df.uri.apply(short_id)
 
-    # Return the processed 'books' DataFrame.
-    return books_df
+    # Return the processed 'DataFrame.
+    return df
 
 
 def get_logbook_events(events_df: pd.DataFrame) -> pd.DataFrame:

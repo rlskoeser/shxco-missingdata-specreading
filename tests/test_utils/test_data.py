@@ -35,18 +35,18 @@ def test_load_initial_data():
 
 @patch("utils.missing_data_processing.pd")
 @patch("utils.missing_data_processing.preprocess_events_data")
-@patch("utils.missing_data_processing.preprocess_books_data")
-def test_get_preprocessed_data(mock_preprocess_books, mock_preprocess_events, mock_pd):
+@patch("utils.missing_data_processing.preprocess_shxco_data")
+def test_get_preprocessed_data(mock_preprocess_shxco, mock_preprocess_events, mock_pd):
     # no datasets specified: should return all
     data = missing_data_processing.get_preprocessed_data()
     for dataset in missing_data_processing.CSV_PATHS.keys():
         assert dataset in data
     assert mock_pd.read_csv.call_count == 4
     mock_preprocess_events.assert_called()
-    mock_preprocess_books.assert_called()
+    mock_preprocess_shxco.assert_called()
 
     # reset mocks
-    for m in [mock_preprocess_books, mock_preprocess_events, mock_pd]:
+    for m in [mock_preprocess_shxco, mock_preprocess_events, mock_pd]:
         m.reset_mock()
 
     # test loading selected datasets
@@ -55,7 +55,7 @@ def test_get_preprocessed_data(mock_preprocess_books, mock_preprocess_events, mo
     assert "books" in data
     assert "borrow_overrides" in data
     mock_preprocess_events.assert_not_called()
-    mock_preprocess_books.assert_called()
+    mock_preprocess_shxco.assert_called()
 
     # test unknown dataset
     with pytest.raises(ValueError):

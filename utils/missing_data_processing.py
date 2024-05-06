@@ -20,13 +20,8 @@ warnings.filterwarnings("ignore")
 DATA_DIR = (Path(__file__).parent.parent / "data").resolve()
 SOURCE_DATA_DIR = (DATA_DIR / "source_data").resolve()
 
-# NOTE: relative paths won't work in colab unless
-# we make this code installable; can we detect and use github url?
-# https://raw.githubusercontent.com/rlskoeser/shxco-missingdata-specreading/main/data/
-
-
 # Ppaths to the CSV files. The 'members', 'books', and 'events' data
-# are the official published versions and are available locally.
+# are the official published versions and are available locally (v1.2).
 # The 'borrow_overrides' data is project-specific and is also available locally.
 
 CSV_PATHS = {

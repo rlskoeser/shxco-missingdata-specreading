@@ -32,8 +32,8 @@ pytest
 ```
 
 Code notebooks can be run using jupyter-lab or a jupyter-aware IDE such as VS Code.
+They are intended to be run locally, with dependencies installed.
 
-
-
-
+We use [treon](https://github.com/ReviewNB/treon) (`pip install treon`) to
+confirm that Jupyter notebooks execute without errors.
 

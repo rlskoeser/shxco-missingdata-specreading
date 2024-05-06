@@ -8,12 +8,12 @@ This folder includes code used for the estimates in the "Missing Data" section o
 
 ### Notebooks to Reproduce Our Analysis
 
-- [ScoMissingMembershipActivities.ipynb](ScoMissingMembershipActivities.ipynb) This notebook includes estimates missing membership activities and code to generate figures 1-3 for our paper.
-- [ScoMissingMembers.ipyb](ScoMissingMembers.ipynb) This notebook includes estimates missing members and code to generate figures 4-6 for our paper.
-- [ScoCalculateBorrowingCapacity.ipynb](ScoCalculateBorrowingCapacity.ipynb) This notebook includes code to generate figure 7 for our paper.
-- [ScoMissingBorrowingActivity.ipynb](Sco_missing_borrowing_activity.ipynb) This notebook estimates minimum missing borrowing activity based on subscriptions and contains code to generate figure 8 for our paper.
+- [MissingMembershipActivities.ipynb](MissingMembershipActivities.ipynb) This notebook includes estimates missing membership activities and code to generate figures 1-3 for our paper.
+- [MissingMembers.ipyb](MissingMembers.ipynb) This notebook includes estimates missing members and code to generate figures 4-6 for our paper.
+- [BorrowingCapacity.ipynb](BorrowingCapacity.ipynb) This notebook includes code to generate figure 7 for our paper.
+- [MissingBorrowingActivity.ipynb](MissingBorrowingActivity.ipynb) This notebook estimates minimum missing borrowing activity based on subscriptions and contains code to generate figure 8 for our paper.
 - [MissingBooks.ipynb](MissingBooks.ipynb) — estimate missing books using Copia
-- [Sco_bookcatalog_books_estimate.ipynb](Sco_bookcatalog_books_estimate.ipynb) — analyze books from catalog of acquisitions 1933—1940 and estimate missing books
+- [BookcatalogBooksEstimate.ipynb](BookcatalogBooksEstimate.ipynb) — analyze books from catalog of acquisitions 1933—1940 and estimate missing books
 
 ### Archived Notebooks
 

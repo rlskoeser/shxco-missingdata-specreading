@@ -17,6 +17,6 @@ This folder includes code used for the estimates in the "Missing Data" section o
 
 ### Archived Notebooks
 
-- [Sco_prophet_missingdata_weekly.ipynb](Sco_prophet_missingdata_weekly.ipynb) — calculates logbook gaps; uses Prophet to generate estimates for missing membership events, missing members
-- [ScoBorrowingCapacity_v1_1data.ipynb](ScoBorrowingCapacity_v1_1data.ipynb) — borrowing capacity analysis; used as basis for estimating missing borrowing activity
+- [Sco_prophet_missingdata_weekly.ipynb](archived_notebooks/Sco_prophet_missingdata_weekly.ipynb) — calculates logbook gaps; uses Prophet to generate estimates for missing membership events, missing members
+- [ScoBorrowingCapacity_v1_1data.ipynb](archived_notebooks/ScoBorrowingCapacity_v1_1data.ipynb) — borrowing capacity analysis; used as basis for estimating missing borrowing activity
 

@@ -94,12 +94,16 @@ input#search {
     position: relative;
 }
 .container .plot {
-    padding-bottom: 75px;
     overflow: scroll;
     height: 100%;
     width: max-content;
     margin: auto;
 }
+/* extra space so we can scroll past the fade */
+.plot > svg, .plot > figure {
+    margin-bottom: 125px;
+}
+
 .container::after {
     /* use absolutely positioned block to fade out and indicate more content */
     content: " ";
@@ -167,7 +171,11 @@ figure > div[class$=swatches-wrap] {
 <script type="module">
 
 let lenskitdata = await d3.csv("lenskit_top_scores.csv");
+let lenskitscores = lenskitdata.map(x => x.score);
+let lenskitdomain = [Math.min(...lenskitscores), Math.max(...lenskitscores)];
 let cfdata = await d3.csv("memorycf_top_scores.csv");
+let cfscores = cfdata.map(x => x.score);
+let cfdomain = [Math.min(...cfscores), Math.max(...cfscores)];
 const titles = await d3.csv("titles.csv");
 
 // create a dict to lookup item title by item id
@@ -198,6 +206,7 @@ function plotLenskitData(data) {
       x: {
         grid: true,
         axis: "both",   // draw both top and bottom
+        domain: lenskitdomain,
       },
       y: {
         domain: item_ids,
@@ -205,7 +214,6 @@ function plotLenskitData(data) {
       marks: [
         Plot.axisX({
             label: "Score",
-            axis: "both",
             anchor: "top",
             labelAnchor: "center",
         }),
@@ -243,6 +251,7 @@ console.log( item_ids.size * 10)
       symbol: {legend: true},
       x: {
         grid: true,
+        domain: cfdomain,
         axis: "both",   // draw both top and bottom
       },
       y: {
@@ -251,7 +260,6 @@ console.log( item_ids.size * 10)
       marks: [
         Plot.axisX({
             label: "Score",
-            axis: "both",
             anchor: "top",
             labelAnchor: "center",
         }),

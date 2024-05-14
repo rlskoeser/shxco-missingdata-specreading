@@ -66,8 +66,7 @@ input#search {
     display: inline-block;
     width: 15px;
     height: 15px;
-    margin-right: 2px;
-    margin-top: 2px;
+    margin: 2px 2px 0;
 }
 .swatch.period1921::before {
     background-color:#1f77b4;
@@ -132,27 +131,15 @@ figure > div[class$=swatches-wrap] {
         <h1>Top Recommendations</h1>
         <form>
         <fieldset>
-
-<!-- TODO: convert period selector to three-state input? first/both/second
- <div class="switch-toggle switch-3 switch-candy">
-
-  <input id="on" name="state-d" type="radio" checked="" />
-  <label for="on" onclick="">ON</label>
-
-  <input id="na" name="state-d" type="radio" checked="checked" />
-  <label for="na" class="disabled" onclick="">N/A</label>
-
-  <input id="off" name="state-d" type="radio" />
-  <label for="off" onclick="">OFF</label>
-</div> -->
             Subscription period:
             <label>
-                <input type="checkbox" name="subscription" value="1921" checked/>
-                <span class="swatch period1921">1921-12-28</span>
+               1921/1922<span class="swatch period1921"/>
+             <input value="1921" name="subscription" type="radio" />
             </label>
+              <input value="both" name="subscription" type="radio" checked="checked" aria-label="both time periods"/>
             <label>
-            <input type="checkbox" name="subscription" value="1924" checked/>
-                <span class="swatch period1924">1924-03-28</span>
+              <input value="1924" name="subscription" type="radio" />
+                <span class="swatch period1924">1924/1925</span>
             </label>
         <input id="search" type="text" placeholder="Filter by author or title">
 <!--        <input id="reset" type="reset" value="reset"> -->
@@ -300,11 +287,11 @@ function redrawPlot() {
         currentCF = currentCF.filter((x) => selectedIds.includes(x.item_id));
     }
 
-    const selectedSubs = Array.from(periodInput).filter((elem) => elem.checked).map((elem) => elem.value);
-    // TODO: what about no selection?
-    if (selectedSubs.length == 1) {
-        currentLenskit = currentLenskit.filter((x) => x.period.startsWith(selectedSubs[0]));
-        currentCF = currentCF.filter((x) => x.period.startsWith(selectedSubs[0]));
+    // optionally filter by subscription time period
+    const selectedSubs = document.querySelector('input[name="subscription"]:checked').value;
+    if (selectedSubs != "both") {
+        currentLenskit = currentLenskit.filter((x) => x.period.startsWith(selectedSubs));
+        currentCF = currentCF.filter((x) => x.period.startsWith(selectedSubs));
     }
 
     plotLenskitData(currentLenskit);

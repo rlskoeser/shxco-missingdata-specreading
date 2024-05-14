@@ -186,13 +186,14 @@ function plotLenskitData(data) {
     // (or draw empty plot with legend and axis only?)
 
     const plot = Plot.plot({
-      width: 450,
+      width: 475,
       // set height to make more space between titles
       height: item_ids.size * 28 + 60,
       color: {type: 'categorical', scheme: "Category10"},
       x: {
         grid: true,
-        axis: "both",   // draw both top and bottom
+        // draw both top and bottom unless we have very few items
+        axis: item_ids.size > 5 ? "both" : "top",
         domain: lenskitdomain,
       },
       y: {
@@ -229,17 +230,17 @@ function plotCFData(data) {
 // TODO: on first draw, copy top x-axis and add to svg in container
 // so top axis can be made sticky
     // (or draw empty plot with legend and axis only?)
-console.log( item_ids.size * 10)
 
     const plot = Plot.plot({
-      width: 450,
+      width: 475,
       height: item_ids.size * 28 + 60,
       color: {type: 'categorical', scheme: "Tableau10"},
       symbol: {legend: true},
       x: {
         grid: true,
         domain: cfdomain,
-        axis: "both",   // draw both top and bottom
+        // draw both top and bottom unless we have very few items
+        axis: item_ids.size > 5 ? "both" : "top",
       },
       y: {
         domain: item_ids,

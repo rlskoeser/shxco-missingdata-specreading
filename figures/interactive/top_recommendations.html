@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6"></script>
+<style type="text/css">
+body {
+    width: 100%;
+    max-height: 100vh;
+    max-width: 100vw;
+    overflow: hidden;
+    display: grid;
+    font-family: system-ui, sans-serif;
+}
+h1, h2 { text-align: center; }
+h2 {
+    position: sticky;
+    top: 0;
+    margin: 0;
+    padding: 0;
+    background-color: white;
+    border-top: 1px solid #ababab;
+    border-bottom: 1px solid #efefef;
+}
+
+/* plots side by side if screen is wide enough */
+@media (width > 1000px) {
+    body {
+       grid-template-columns: 1fr 1fr;
+       grid-template-rows: auto;
+        grid-template-areas:
+            "controls controls"
+            "plot1 plot2";
+    }
+}
+
+/* stack vertically for smaller widths */
+@media (width <= 1000px) {
+    body {
+        min-width: 550px;
+       grid-template-rows: auto 1fr 1fr;
+        grid-template-areas:
+            "controls"
+            "plot1"
+            "plot2";
+        max-height: 80vh;
+    }
+    .container {
+        max-height: 40%;
+    }
+}
+.controls {
+    grid-area: controls;
+    text-align: center;
+}
+fieldset {
+    border: 0;
+}
+
+input#search {
+    margin: 0 10px;
+}
+
+.swatch::before {
+    content: " ";
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    margin-right: 2px;
+    margin-top: 2px;
+}
+.swatch.period1921::before {
+    background-color:#1f77b4;
+}
+.swatch.period1924::before {
+    background-color: #ff7f0e;
+}
+
+#imf {
+    grid-area: plot1;
+}
+#imf svg {
+    margin-top: 50px;  /* adjust for shape legend on cf plot */
+}
+#cf {
+    grid-area: plot2;
+}
+
+.container {
+    max-height: 80vh;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    position: relative;
+}
+.container .plot {
+    padding-bottom: 75px;
+    overflow: scroll;
+    height: 100%;
+    width: max-content;
+    margin: auto;
+}
+.container::after {
+    /* use absolutely positioned block to fade out and indicate more content */
+    content: " ";
+    pointer-events: none;
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 75px;
+    background: rgba(255,255,255, 0.3);
+    background: linear-gradient(rgba(255,255,255,0), rgba(255,255,255,1));
+}
+text > tspan:first-child {
+    font-style: italic;
+}
+
+figure > div[class$=swatches-wrap] {
+    position: sticky;
+    top: 0;
+    background-color: white;
+}
+
+</style>
+</head>
+<body>
+    <div class="controls">
+        <h1>Top Recommendations</h1>
+        <form>
+        <fieldset>
+
+<!-- TODO: convert period selector to three-state input? first/both/second
+ <div class="switch-toggle switch-3 switch-candy">
+
+  <input id="on" name="state-d" type="radio" checked="" />
+  <label for="on" onclick="">ON</label>
+
+  <input id="na" name="state-d" type="radio" checked="checked" />
+  <label for="na" class="disabled" onclick="">N/A</label>
+
+  <input id="off" name="state-d" type="radio" />
+  <label for="off" onclick="">OFF</label>
+</div> -->
+            Subscription period:
+            <label>
+                <input type="checkbox" name="subscription" value="1921" checked/>
+                <span class="swatch period1921">1921-12-28</span>
+            </label>
+            <label>
+            <input type="checkbox" name="subscription" value="1924" checked/>
+                <span class="swatch period1924">1924-03-28</span>
+            </label>
+        <input id="search" type="text" placeholder="Filter by author or title">
+<!--        <input id="reset" type="reset" value="reset"> -->
+        </fieldset>
+        </form>
+    </div>
+    <div class="container" id="imf">
+        <h2>Implicit Matrix Factorization Model</h2>
+        <div id="imfplot" class="plot"></div>
+    </div>
+    <div class="container" id="cf">
+        <h2>Collaborative Filtering Methods</h2>
+        <div id="cfplot" class="plot"></div>
+    </div>
+
+<script type="module">
+
+let lenskitdata = await d3.csv("lenskit_top_scores.csv");
+let cfdata = await d3.csv("memorycf_top_scores.csv");
+const titles = await d3.csv("titles.csv");
+
+// create a dict to lookup item title by item id
+const item_label = titles.reduce(
+    (dict, el, index) => (
+        // dict[el.id] = `${el.title}, ${el.author}` + (el.year ? ` (${new Number(el.year).toFixed(0)})` : '')
+        dict[el.id] = `${el.title}\n${el.author}`  + (el.year ? ` (${new Number(el.year).toFixed(0)})`:'')
+    , dict),
+    {}
+);
+
+// sort highest score first
+lenskitdata = d3.sort(lenskitdata, (a, b) => d3.descending(a.score, b.score));
+cfdata = d3.sort(cfdata, (a, b) => d3.descending(a.score, b.score));
+
+function plotLenskitData(data) {
+    let item_ids = new Set(data.map((x) => x.item_id));
+
+// TODO: on first draw, copy top x-axis and add to svg in container
+// so top axis can be made sticky
+    // (or draw empty plot with legend and axis only?)
+
+    const plot = Plot.plot({
+      width: 450,
+      // set height to make more space between titles
+      height: item_ids.size * 28 + 60,
+      color: {type: 'categorical', scheme: "Category10"},
+      x: {
+        grid: true,
+        axis: "both",   // draw both top and bottom
+      },
+      y: {
+        domain: item_ids,
+      },
+      marks: [
+        Plot.axisX({
+            label: "Score",
+            axis: "both",
+            anchor: "top",
+            labelAnchor: "center",
+        }),
+        Plot.axisY({
+            label: null,  // suppress
+            marginLeft: 300,
+            labelAnchor: "top",
+            tickSize: 0, // don’t draw ticks for titles
+            tickFormat: (d) => item_label[d],
+        }),
+        Plot.tickX(data,
+            // Plot.normalizeX({x: "score", y: "item_id", stroke: d => d.subscription_start.startsWith("1921") ? "lightslategray" : "orange" }))
+            Plot.normalizeX({x: "score", y: "item_id", stroke: "period"}))
+          ]
+
+    });
+    const div = document.querySelector("#imfplot");
+    div.replaceChildren(plot)
+    // can't make axis sticky; but could copy it to another element that is
+}
+
+
+function plotCFData(data) {
+    let item_ids = new Set(data.map((x) => x.item_id));
+
+// TODO: on first draw, copy top x-axis and add to svg in container
+// so top axis can be made sticky
+    // (or draw empty plot with legend and axis only?)
+console.log( item_ids.size * 10)
+
+    const plot = Plot.plot({
+      width: 450,
+      height: item_ids.size * 28 + 60,
+      color: {type: 'categorical', scheme: "Tableau10"},
+      symbol: {legend: true},
+      x: {
+        grid: true,
+        axis: "both",   // draw both top and bottom
+      },
+      y: {
+        domain: item_ids,
+      },
+      marks: [
+        Plot.axisX({
+            label: "Score",
+            axis: "both",
+            anchor: "top",
+            labelAnchor: "center",
+        }),
+        Plot.axisY({
+            // label: "Titles",
+            label: null,  // suppress
+            marginLeft: 300,
+            labelAnchor: "top",
+            tickSize: 0, // don’t draw ticks for titles
+            tickFormat: (d) => item_label[d],
+        }),
+        Plot.dot(data, Plot.normalizeX({x: "score", y: "item_id", fill: "period", symbol: "metric"}))
+        ]
+    });
+    const div = document.querySelector("#cfplot");
+    div.replaceChildren(plot)
+    // can't make axis sticky; but could copy it to another element that is
+}
+
+plotLenskitData(lenskitdata);
+plotCFData(cfdata);
+
+
+// filtering requires removing and redrawing the plot
+
+
+const searchInput = document.getElementById("search");
+const periodInput = document.querySelectorAll("input[name=subscription]");
+
+function redrawPlot() {
+    let currentLenskit = lenskitdata;
+    let currentCF = cfdata;
+    // if seach input has content, identify matching items
+    if (searchInput.value) {
+        const term = searchInput.value.toLowerCase();
+        const selectedIds = titles.filter(row => row.title.toLowerCase().includes(term) || row.author.toLowerCase().includes(term)).map(row => row.id);
+        currentLenskit = currentLenskit.filter((x) => selectedIds.includes(x.item_id));
+        currentCF = currentCF.filter((x) => selectedIds.includes(x.item_id));
+    }
+
+    const selectedSubs = Array.from(periodInput).filter((elem) => elem.checked).map((elem) => elem.value);
+    // TODO: what about no selection?
+    if (selectedSubs.length == 1) {
+        currentLenskit = currentLenskit.filter((x) => x.period.startsWith(selectedSubs[0]));
+        currentCF = currentCF.filter((x) => x.period.startsWith(selectedSubs[0]));
+    }
+
+    plotLenskitData(currentLenskit);
+    plotCFData(currentCF);
+}
+
+searchInput.addEventListener("input", (event) => {
+  redrawPlot();
+});
+periodInput.forEach((elem) => elem.addEventListener("change", (event) => {
+  redrawPlot();
+}));
+
+</script>
+</body>
+</html>

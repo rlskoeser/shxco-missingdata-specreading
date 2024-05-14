@@ -78,20 +78,32 @@ input#search {
 #imf {
     grid-area: plot1;
 }
-#imf svg {
-    margin-top: 50px;  /* adjust for shape legend on cf plot */
+#imf .plot-axis svg {
+    margin-top: 50px;  /* adjust for shape legend on cf plot, so plots align */
 }
 #cf {
     grid-area: plot2;
 }
+#cf .plot-axis figure {
+    padding: 0;
+    margin: 0;
+}
 
 .container {
     max-height: 80vh;
+    min-height: 300px;
     overflow: hidden;
     margin: 0;
     padding: 0;
     position: relative;
 }
+/* make top axis sticky */
+.container .plot-axis {
+    width: max-content;
+    margin: auto;
+    position: sticky;
+}
+
 .container .plot {
     overflow: scroll;
     height: 100%;
@@ -100,7 +112,8 @@ input#search {
 }
 /* extra space so we can scroll past the fade */
 .plot > svg, .plot > figure {
-    margin-bottom: 125px;
+    margin-bottom: 100px;
+    padding-bottom: 100px;
 }
 
 .container::after {
@@ -148,10 +161,12 @@ figure > div[class$=swatches-wrap] {
     </div>
     <div class="container" id="imf">
         <h2>Implicit Matrix Factorization Model</h2>
+        <div id="imfplot-axis" class="plot-axis"></div>
         <div id="imfplot" class="plot"></div>
     </div>
     <div class="container" id="cf">
         <h2>Collaborative Filtering Methods</h2>
+        <div id="cfplot-axis" class="plot-axis"></div>
         <div id="cfplot" class="plot"></div>
     </div>
 
@@ -178,6 +193,42 @@ const item_label = titles.reduce(
 lenskitdata = d3.sort(lenskitdata, (a, b) => d3.descending(a.score, b.score));
 cfdata = d3.sort(cfdata, (a, b) => d3.descending(a.score, b.score));
 
+// common plot config settings
+const plotConfig = {
+    width: 475,
+    marginLeft: 300,
+};
+
+function plotLenskitAxis() {
+    /* plot axis only so it can be made sticky when actual plot scrolls */
+    const plot = Plot.plot({
+      width: plotConfig.width,
+      height: 30,
+       x: {
+        grid: true,
+        axis: "top",
+        domain: lenskitdomain
+      },
+      y: {
+        domain: [],
+      },
+      marks: [
+        Plot.axisX({
+            label: "Score",
+            anchor: "top",
+            labelAnchor: "center",
+        }),
+         Plot.axisY({
+            tickSize: 0,
+            label: null,  // suppress
+            marginLeft: plotConfig.marginLeft,
+        })
+      ]
+    });
+    document.querySelector("#imfplot-axis").replaceChildren(plot)
+}
+
+
 function plotLenskitData(data) {
     let item_ids = new Set(data.map((x) => x.item_id));
 
@@ -186,28 +237,32 @@ function plotLenskitData(data) {
     // (or draw empty plot with legend and axis only?)
 
     const plot = Plot.plot({
-      width: 475,
+      width: plotConfig.width,
       // set height to make more space between titles
       height: item_ids.size * 28 + 60,
+      marginTop: 0,  // no top margin since axis is plotted separately
       color: {type: 'categorical', scheme: "Category10"},
       x: {
         grid: true,
+       label: "Score",
+       labelAnchor: "center",
         // draw both top and bottom unless we have very few items
-        axis: item_ids.size > 5 ? "both" : "top",
+        // axis: item_ids.size > 5 ? "both" : "top",
+        axis: "bottom",
         domain: lenskitdomain,
       },
       y: {
         domain: item_ids,
       },
       marks: [
-        Plot.axisX({
-            label: "Score",
-            anchor: "top",
-            labelAnchor: "center",
-        }),
+        // Plot.axisX({
+        //     // label: "Score",
+        //      // axis: "bottom",
+        //     // labelAnchor: "center",
+        // }),
         Plot.axisY({
             label: null,  // suppress
-            marginLeft: 300,
+            marginLeft: plotConfig.marginLeft,
             labelAnchor: "top",
             tickSize: 0, // don’t draw ticks for titles
             tickFormat: (d) => item_label[d],
@@ -223,6 +278,42 @@ function plotLenskitData(data) {
     // can't make axis sticky; but could copy it to another element that is
 }
 
+const measureLabel = {
+    cosine: "Cosine Distance",
+    euclidean: "Euclidean Distance",
+    pearson: "Pearson Correlation Coefficient"
+}
+
+function plotCFAxis(data) {
+    /* plot axis only so it can be made sticky when actual plot scrolls */
+    const plot = Plot.plot({
+      width: plotConfig.width,
+      height: 30,
+      symbol: {legend: true, tickFormat: (x) => measureLabel[x]},
+       x: {
+        grid: true,
+        axis: "top",
+        domain: cfdomain
+      },
+      y: {
+        domain: [],
+      },
+      marks: [
+        Plot.axisX({
+            label: "Score",
+            anchor: "top",
+            labelAnchor: "center",
+        }),
+         Plot.axisY({
+            tickSize: 0,
+            label: null,  // suppress
+            marginLeft: plotConfig.marginLeft,
+        }),
+       Plot.dot(data, Plot.normalizeX({x: "score", y: "item_id", fill: "period", symbol: "metric"}))
+      ]
+    });
+    document.querySelector("#cfplot-axis").replaceChildren(plot)
+}
 
 function plotCFData(data) {
     let item_ids = new Set(data.map((x) => x.item_id));
@@ -232,15 +323,15 @@ function plotCFData(data) {
     // (or draw empty plot with legend and axis only?)
 
     const plot = Plot.plot({
-      width: 475,
+      width: plotConfig.width,
       height: item_ids.size * 28 + 60,
+      marginTop: 0,  // no top margin since axis is plotted separately
       color: {type: 'categorical', scheme: "Tableau10"},
-      symbol: {legend: true},
+      // symbol: {legend: true},  // plotted in axis
       x: {
         grid: true,
         domain: cfdomain,
-        // draw both top and bottom unless we have very few items
-        axis: item_ids.size > 5 ? "both" : "top",
+        axis: "bottom",
       },
       y: {
         domain: item_ids,
@@ -248,13 +339,13 @@ function plotCFData(data) {
       marks: [
         Plot.axisX({
             label: "Score",
-            anchor: "top",
+            anchor: "bottom",
             labelAnchor: "center",
         }),
         Plot.axisY({
             // label: "Titles",
             label: null,  // suppress
-            marginLeft: 300,
+            marginLeft: plotConfig.marginLeft,
             labelAnchor: "top",
             tickSize: 0, // don’t draw ticks for titles
             tickFormat: (d) => item_label[d],
@@ -268,8 +359,9 @@ function plotCFData(data) {
 }
 
 plotLenskitData(lenskitdata);
+plotLenskitAxis();
 plotCFData(cfdata);
-
+plotCFAxis(cfdata);
 
 // filtering requires removing and redrawing the plot
 

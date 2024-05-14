@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6"></script>
+<style type="text/css">
+body {
+    width: 100%;
+    max-height: 100vh;
+    max-width: 100vw;
+    overflow: hidden;
+    display: grid;
+    font-family: system-ui, sans-serif;
+}
+h1, h2 { text-align: center; }
+h2 {
+    position: sticky;
+    top: 0;
+    margin: 0;
+    padding: 0;
+    background-color: white;
+    border-top: 1px solid #ababab;
+    border-bottom: 1px solid #efefef;
+}
+
+/* plots side by side if screen is wide enough */
+@media (width > 1000px) {
+    body {
+       grid-template-columns: 1fr 1fr;
+       grid-template-rows: auto;
+        grid-template-areas:
+            "controls controls"
+            "plot1 plot2";
+    }
+}
+
+/* stack vertically for smaller widths */
+@media (width <= 1000px) {
+    body {
+        min-width: 550px;
+       grid-template-rows: auto 1fr 1fr;
+        grid-template-areas:
+            "controls"
+            "plot1"
+            "plot2";
+        max-height: 80vh;
+    }
+    .container {
+        max-height: 40%;
+    }
+}
+.controls {
+    grid-area: controls;
+    text-align: center;
+}
+fieldset {
+    border: 0;
+}
+
+input#search {
+    margin: 0 10px;
+}
+
+.swatch::before {
+    content: " ";
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    margin: 2px 2px 0;
+}
+.swatch.period1921::before {
+    background-color:#1f77b4;
+}
+.swatch.period1924::before {
+    background-color: #ff7f0e;
+}
+
+#imf {
+    grid-area: plot1;
+}
+#imf .plot-axis svg {
+    margin-top: 50px;  /* adjust for shape legend on cf plot, so plots align */
+}
+#cf {
+    grid-area: plot2;
+}
+#cf .plot-axis figure {
+    padding: 0;
+    margin: 0;
+}
+
+.container {
+    max-height: 80vh;
+    min-height: 300px;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    position: relative;
+}
+/* make top axis sticky */
+.container .plot-axis {
+    width: max-content;
+    margin: auto;
+    position: sticky;
+}
+
+.container .plot {
+    overflow: scroll;
+    height: 100%;
+    width: max-content;
+    margin: auto;
+}
+/* extra space so we can scroll past the fade */
+.plot > svg, .plot > figure {
+    margin-bottom: 100px;
+    padding-bottom: 100px;
+}
+
+.container::after {
+    /* use absolutely positioned block to fade out and indicate more content */
+    content: " ";
+    pointer-events: none;
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 75px;
+    background: rgba(255,255,255, 0.3);
+    background: linear-gradient(rgba(255,255,255,0), rgba(255,255,255,1));
+}
+text > tspan:first-child {
+    font-style: italic;
+}
+
+figure > div[class$=swatches-wrap] {
+    position: sticky;
+    top: 0;
+    background-color: white;
+}
+
+</style>
+</head>
+<body>
+    <div class="controls">
+        <h1>Top Recommendations</h1>
+        <form>
+        <fieldset>
+            Subscription period:
+            <label>
+               1921/1922<span class="swatch period1921"/>
+             <input value="1921" name="subscription" type="radio" />
+            </label>
+              <input value="both" name="subscription" type="radio" checked="checked" aria-label="both time periods"/>
+            <label>
+              <input value="1924" name="subscription" type="radio" />
+                <span class="swatch period1924">1924/1925</span>
+            </label>
+        <input id="search" type="text" placeholder="Filter by author or title">
+<!--        <input id="reset" type="reset" value="reset"> -->
+        </fieldset>
+        </form>
+    </div>
+    <div class="container" id="imf">
+        <h2>Implicit Matrix Factorization Model</h2>
+        <div id="imfplot-axis" class="plot-axis"></div>
+        <div id="imfplot" class="plot"></div>
+    </div>
+    <div class="container" id="cf">
+        <h2>Collaborative Filtering Methods</h2>
+        <div id="cfplot-axis" class="plot-axis"></div>
+        <div id="cfplot" class="plot"></div>
+    </div>
+
+<script type="module">
+
+let lenskitdata = await d3.csv("lenskit_top_scores.csv");
+let lenskitscores = lenskitdata.map(x => x.score);
+let lenskitdomain = [Math.min(...lenskitscores), Math.max(...lenskitscores)];
+let cfdata = await d3.csv("memorycf_top_scores.csv");
+let cfscores = cfdata.map(x => x.score);
+let cfdomain = [Math.min(...cfscores), Math.max(...cfscores)];
+const titles = await d3.csv("titles.csv");
+
+// create a dict to lookup item title by item id
+const item_label = titles.reduce(
+    (dict, el, index) => (
+        // dict[el.id] = `${el.title}, ${el.author}` + (el.year ? ` (${new Number(el.year).toFixed(0)})` : '')
+        dict[el.id] = `${el.title}\n${el.author}`  + (el.year ? ` (${new Number(el.year).toFixed(0)})`:'')
+    , dict),
+    {}
+);
+
+// sort highest score first
+lenskitdata = d3.sort(lenskitdata, (a, b) => d3.descending(a.score, b.score));
+cfdata = d3.sort(cfdata, (a, b) => d3.descending(a.score, b.score));
+
+// common plot config settings
+const plotConfig = {
+    width: 475,
+    marginLeft: 300,
+};
+
+function plotLenskitAxis() {
+    /* plot axis only so it can be made sticky when actual plot scrolls */
+    const plot = Plot.plot({
+      width: plotConfig.width,
+      height: 30,
+       x: {
+        grid: true,
+        axis: "top",
+        domain: lenskitdomain
+      },
+      y: {
+        domain: [],
+      },
+      marks: [
+        Plot.axisX({
+            label: "Score",
+            anchor: "top",
+            labelAnchor: "center",
+        }),
+         Plot.axisY({
+            tickSize: 0,
+            label: null,  // suppress
+            marginLeft: plotConfig.marginLeft,
+        })
+      ]
+    });
+    document.querySelector("#imfplot-axis").replaceChildren(plot)
+}
+
+
+function plotLenskitData(data) {
+    let item_ids = new Set(data.map((x) => x.item_id));
+
+// TODO: on first draw, copy top x-axis and add to svg in container
+// so top axis can be made sticky
+    // (or draw empty plot with legend and axis only?)
+
+    const plot = Plot.plot({
+      width: plotConfig.width,
+      // set height to make more space between titles
+      height: item_ids.size * 28 + 60,
+      marginTop: 0,  // no top margin since axis is plotted separately
+      color: {type: 'categorical', scheme: "Category10"},
+      x: {
+        grid: true,
+       label: "Score",
+       labelAnchor: "center",
+        // draw both top and bottom unless we have very few items
+        // axis: item_ids.size > 5 ? "both" : "top",
+        axis: "bottom",
+        domain: lenskitdomain,
+      },
+      y: {
+        domain: item_ids,
+      },
+      marks: [
+        // Plot.axisX({
+        //     // label: "Score",
+        //      // axis: "bottom",
+        //     // labelAnchor: "center",
+        // }),
+        Plot.axisY({
+            label: null,  // suppress
+            marginLeft: plotConfig.marginLeft,
+            labelAnchor: "top",
+            tickSize: 0, // don’t draw ticks for titles
+            tickFormat: (d) => item_label[d],
+        }),
+        Plot.tickX(data,
+            // Plot.normalizeX({x: "score", y: "item_id", stroke: d => d.subscription_start.startsWith("1921") ? "lightslategray" : "orange" }))
+            Plot.normalizeX({x: "score", y: "item_id", stroke: "period"}))
+          ]
+
+    });
+    const div = document.querySelector("#imfplot");
+    div.replaceChildren(plot)
+    // can't make axis sticky; but could copy it to another element that is
+}
+
+const measureLabel = {
+    cosine: "Cosine Distance",
+    euclidean: "Euclidean Distance",
+    pearson: "Pearson Correlation Coefficient"
+}
+
+function plotCFAxis(data) {
+    /* plot axis only so it can be made sticky when actual plot scrolls */
+    const plot = Plot.plot({
+      width: plotConfig.width,
+      height: 30,
+      symbol: {legend: true, tickFormat: (x) => measureLabel[x]},
+       x: {
+        grid: true,
+        axis: "top",
+        domain: cfdomain
+      },
+      y: {
+        domain: [],
+      },
+      marks: [
+        Plot.axisX({
+            label: "Score",
+            anchor: "top",
+            labelAnchor: "center",
+        }),
+         Plot.axisY({
+            tickSize: 0,
+            label: null,  // suppress
+            marginLeft: plotConfig.marginLeft,
+        }),
+       Plot.dot(data, Plot.normalizeX({x: "score", y: "item_id", fill: "period", symbol: "metric"}))
+      ]
+    });
+    document.querySelector("#cfplot-axis").replaceChildren(plot)
+}
+
+function plotCFData(data) {
+    let item_ids = new Set(data.map((x) => x.item_id));
+
+// TODO: on first draw, copy top x-axis and add to svg in container
+// so top axis can be made sticky
+    // (or draw empty plot with legend and axis only?)
+
+    const plot = Plot.plot({
+      width: plotConfig.width,
+      height: item_ids.size * 28 + 60,
+      marginTop: 0,  // no top margin since axis is plotted separately
+      color: {type: 'categorical', scheme: "Tableau10"},
+      // symbol: {legend: true},  // plotted in axis
+      x: {
+        grid: true,
+        domain: cfdomain,
+        axis: "bottom",
+      },
+      y: {
+        domain: item_ids,
+      },
+      marks: [
+        Plot.axisX({
+            label: "Score",
+            anchor: "bottom",
+            labelAnchor: "center",
+        }),
+        Plot.axisY({
+            // label: "Titles",
+            label: null,  // suppress
+            marginLeft: plotConfig.marginLeft,
+            labelAnchor: "top",
+            tickSize: 0, // don’t draw ticks for titles
+            tickFormat: (d) => item_label[d],
+        }),
+        Plot.dot(data, Plot.normalizeX({x: "score", y: "item_id", fill: "period", symbol: "metric"}))
+        ]
+    });
+    const div = document.querySelector("#cfplot");
+    div.replaceChildren(plot)
+    // can't make axis sticky; but could copy it to another element that is
+}
+
+plotLenskitData(lenskitdata);
+plotLenskitAxis();
+plotCFData(cfdata);
+plotCFAxis(cfdata);
+
+// filtering requires removing and redrawing the plot
+
+
+const searchInput = document.getElementById("search");
+const periodInput = document.querySelectorAll("input[name=subscription]");
+
+function redrawPlot() {
+    let currentLenskit = lenskitdata;
+    let currentCF = cfdata;
+    // if seach input has content, identify matching items
+    if (searchInput.value) {
+        const term = searchInput.value.toLowerCase();
+        const selectedIds = titles.filter(row => row.title.toLowerCase().includes(term) || row.author.toLowerCase().includes(term)).map(row => row.id);
+        currentLenskit = currentLenskit.filter((x) => selectedIds.includes(x.item_id));
+        currentCF = currentCF.filter((x) => selectedIds.includes(x.item_id));
+    }
+
+    // optionally filter by subscription time period
+    const selectedSubs = document.querySelector('input[name="subscription"]:checked').value;
+    if (selectedSubs != "both") {
+        currentLenskit = currentLenskit.filter((x) => x.period.startsWith(selectedSubs));
+        currentCF = currentCF.filter((x) => x.period.startsWith(selectedSubs));
+    }
+
+    plotLenskitData(currentLenskit);
+    plotCFData(currentCF);
+}
+
+searchInput.addEventListener("input", (event) => {
+  redrawPlot();
+});
+periodInput.forEach((elem) => elem.addEventListener("change", (event) => {
+  redrawPlot();
+}));
+
+</script>
+</body>
+</html>

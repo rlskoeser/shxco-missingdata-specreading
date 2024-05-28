@@ -72,9 +72,12 @@ def raincloud_plot(dataset, fieldname, field_label, tooltip=None):
         # define a single selection that chooses the nearest point
         nearest = alt.selection_single(on="mouseover", nearest=True)
         selection_opts.append(nearest)
+        # add click selection to support mobile/touch interaction
+        click_selection = alt.selection_single(on="click")
+        selection_opts.append(click_selection)
         # add a stroke to outline; transparent if not seleted,  otherwise highlight
         opt_encode_args["stroke"] = alt.condition(
-            ~nearest, default_color, highlight_color
+            ~click_selection, default_color, highlight_color
         )
 
     stripplot = (

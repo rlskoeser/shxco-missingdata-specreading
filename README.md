@@ -1,6 +1,8 @@
-# Replication code and data for "Missing data, Speculative Reading"
+# Replication code and data for “Missing data, Speculative Reading”
 
-This repository provides replication code and data for **Missing Data, Speculative Reading** article.
+This repository provides replication code and data for **Missing Data, Speculative Reading**, by Rebecca Sutton Koeser and Zoe LeBlanc, co-published by *Modernism/modernity PrintPlus* and *Journal of Cultural Analytics* as part of a special issue on “The World of Shakespeare and Company” edited by Joshua Kotin and Rebecca Sutton Koeser.
+
+Read the [article on *Modernism/modernity PrintPlus*](https://modernismmodernity.org/forums/posts/koeser-leblanc-missing-data-speculative-reading); read [article on *Journal of Cultural Analytics*](https://culturalanalytics.org/article/116926-missing-data-speculative-reading).
 
 ## Contents
 - [data](data) - data specific to this article and source data from the [Shakepeare and Company Project](https://shakespeareandco.princeton.edu/)
